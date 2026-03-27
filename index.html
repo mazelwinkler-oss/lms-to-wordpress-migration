@@ -216,14 +216,17 @@ tr:hover td { background: rgba(255,255,255,0.02); }
       <h2>Drag &amp; Drop Mapping</h2>
       <p class="hint">Ziehe die erkannten Quell-Felder (links, orange) auf die passenden WordPress-Zielfelder (rechts, gruen). Jede Zuordnung wird sofort sichtbar.</p>
       <div class="mapping-guide" id="mapping-guide">
-        <strong>Kurzanleitung:</strong> Jedes orange Feld links ist etwas, das in deiner XML gefunden wurde. Ziehe es auf das passende gruene Feld rechts — das bestimmt, wo es in WordPress landen soll.
+        <strong>MemberPress → WordPress Mapping (laut Spezifikation):</strong>
         <ul>
-          <li><strong>Post-Types</strong> = Inhaltstypen. Ziehe z.B. deine <strong>Lektionen</strong> auf "Beitrag", deine <strong>Kurse/Sektionen</strong> auf "Unterkategorie", deine <strong>Produkte</strong> auf "Angebot".</li>
-          <li><strong>Taxonomien</strong> = Gruppierungen. Wenn du Etappen-Kategorien hast, ziehe sie auf "Unterkategorie" oder "Oberkategorie".</li>
-          <li><strong>Zusatzfelder (Meta)</strong> = Verknuepfungs- und Sortierfelder. Die <strong>section_id</strong> verknuepft Lektionen mit Sektionen, die <strong>lesson_order</strong> bestimmt die Reihenfolge.</li>
-          <li><strong>Content-Muster</strong> = Shortcodes im Text, die extrahiert werden sollen (z.B. Quiz-Codes).</li>
+          <li><strong>mpcs-lesson</strong> (deine Lektionen) <span class="arrow">→</span> auf <strong>"WordPress Beitrag"</strong> ziehen</li>
+          <li><strong>memberpressproduct</strong> (deine Produkte) <span class="arrow">→</span> auf <strong>"Angebot (wg_angebot)"</strong> ziehen</li>
+          <li><strong>mpcs-course</strong> (deine Sektionen) <span class="arrow">→</span> auf <strong>"Unterkategorien"</strong> ziehen — werden zu Kategorien wie E01, E02...</li>
+          <li><strong>mpcs-course-categories</strong> (Taxonomie) <span class="arrow">→</span> auf <strong>"Oberkategorie"</strong> ziehen + Namen eingeben (z.B. "Etappen")</li>
+          <li><strong>_mpcs_lesson_section_id</strong> <span class="arrow">→</span> auf <strong>"Lektion → Sektion"</strong> ziehen — verknuepft Lektionen mit ihren Sektionen</li>
+          <li><strong>_mpcs_lesson_lesson_order</strong> <span class="arrow">→</span> auf <strong>"Reihenfolge"</strong> ziehen — bestimmt die Sortierung</li>
+          <li><strong>[chained-quiz X]</strong> <span class="arrow">→</span> auf <strong>"Quiz-Extraktion"</strong> ziehen — wird aus Text geholt und als wg_besenwagen_code gespeichert</li>
         </ul>
-        <em>Nicht alle Felder muessen zugeordnet werden — nur die, die du in WordPress brauchst!</em>
+        <em>Ziehe nur die Felder rueber, die du brauchst. Die Nummern rechts zeigen die empfohlene Reihenfolge.</em>
       </div>
       <div class="dnd" id="dnd">
         <div class="dnd-col">
@@ -440,45 +443,45 @@ function checkReady() {
 //  KNOWN FIELD DESCRIPTIONS (human-readable)
 // ================================================================
 const HINTS = {
-  // Post types
-  'mpcs-lesson': 'MemberPress Lektionen (Lerninhalte)',
-  'mpcs-course': 'MemberPress Kurse / Sektionen',
-  'memberpressproduct': 'MemberPress Produkte / Mitgliedschaften',
-  'wg_angebot': 'Wegefaehrte Angebote (Start/Business/Enterprise)',
-  'post': 'WordPress Beitraege',
-  'page': 'WordPress Seiten',
-  // Meta keys
-  '_mpcs_lesson_section_id': 'Verknuepft jede Lektion mit ihrer Sektion (ID-Verweis)',
-  '_mpcs_lesson_lesson_order': 'Reihenfolge/Position der Lektion innerhalb der Sektion',
-  '_mpcs_lesson_status': 'Status der Lektion (aktiv/inaktiv)',
-  '_mepr_unauthorized_message_type': 'MemberPress Zugriffs-Einstellung',
-  '_mepr_unauthorized_message': 'Nachricht fuer nicht-autorisierte Nutzer',
-  '_mepr_unauth_login': 'Login-Einstellung fuer gesperrte Inhalte',
-  'wg_stop_title': 'Titel des Etappenstopps',
-  'wg_video_title': 'Titel des Videos',
-  'wg_video_length': 'Laenge des Videos',
-  'wg_spickzettel_title': 'Titel des Spickzettels',
-  'wg_spickzettel_effort': 'Aufwand fuer den Spickzettel',
-  'wg_besenwagen_title': 'Titel der Besenwagen-Aufgabe',
-  'wg_besenwagen_duration': 'Dauer der Besenwagen-Aufgabe',
-  'wg_besenwagen_intro': 'Einleitungstext Besenwagen',
-  'wg_besenwagen_code': 'Code/Shortcode fuer Quiz',
-  'heading_text': 'Ueberschrift des Angebots',
-  'nettopreis': 'Netto-Preis des Angebots',
-  'mehrwertsteuer': 'MwSt-Satz',
-  'endpreis': 'Endpreis inkl. MwSt',
-  'rechnungsstellung': 'Art der Rechnungsstellung',
-  'intervall': 'Zahlungsintervall',
-  'zugang': 'Zugangsart/-dauer',
-  'type': 'Angebotstyp',
-  'zahlungsform': 'Zahlungsform (Abo, Einmal, etc.)',
-  'rollen_slug': 'WordPress-Rolle fuer dieses Angebot',
-  // Taxonomies
-  'mpcs-course-categories': 'Kurs-Kategorien / Etappen-Einteilung',
-  'mpcs-curriculum-categories': 'Curriculum-Kategorien',
-  'mpcs-course-tags': 'Kurs-Tags / Schlagworte',
-  'mepr-product-category': 'Produkt-Kategorien',
-  'category': 'WordPress Kategorien',
+  // Post types — was sind das fuer Inhalte?
+  'mpcs-lesson': '→ HIERHER auf "WordPress Beitrag" ziehen! Das sind deine Lektionen/Lerninhalte.',
+  'mpcs-course': '→ HIERHER auf "Unterkategorien" ziehen! Jede Sektion wird zur WordPress-Kategorie (E01, E02...).',
+  'memberpressproduct': '→ HIERHER auf "Angebot (wg_angebot)" ziehen! Das sind deine Produkte/Mitgliedschaften.',
+  'wg_angebot': '→ HIERHER auf "Angebot (wg_angebot)" ziehen! Bereits als Angebot formatiert.',
+  // Meta keys — wozu dienen sie?
+  '_mpcs_lesson_section_id': '→ Auf "Lektion → Sektion" ziehen! Dieses Feld sagt, zu welcher Sektion jede Lektion gehoert.',
+  '_mpcs_lesson_lesson_order': '→ Auf "Reihenfolge" ziehen! Bestimmt die Position/Sortierung jeder Lektion.',
+  '_mpcs_lesson_status': 'Internes MemberPress-Feld (Status der Lektion). Wird normalerweise nicht benoetigt.',
+  '_mepr_unauthorized_message_type': 'MemberPress-intern. Wird normalerweise nicht benoetigt.',
+  '_mepr_unauthorized_message': 'MemberPress-intern. Wird normalerweise nicht benoetigt.',
+  '_mepr_unauth_login': 'MemberPress-intern. Wird normalerweise nicht benoetigt.',
+  // wg_ fields — werden automatisch uebernommen
+  'wg_stop_title': 'Titel des Etappenstopps. Wird automatisch als Meta uebernommen.',
+  'wg_video_title': 'Video-Titel. Wird automatisch als Meta uebernommen.',
+  'wg_video_length': 'Video-Laenge. Wird automatisch als Meta uebernommen.',
+  'wg_spickzettel_title': 'Spickzettel-Titel. Wird automatisch als Meta uebernommen.',
+  'wg_spickzettel_effort': 'Spickzettel-Aufwand. Wird automatisch als Meta uebernommen.',
+  'wg_besenwagen_title': 'Besenwagen-Titel. Wird automatisch als Meta uebernommen.',
+  'wg_besenwagen_duration': 'Besenwagen-Dauer. Wird automatisch als Meta uebernommen.',
+  'wg_besenwagen_intro': 'Besenwagen-Intro. Wird automatisch als Meta uebernommen.',
+  'wg_besenwagen_code': 'Quiz-Code. Wird automatisch aus [chained-quiz] extrahiert.',
+  // Angebots-Felder
+  'heading_text': 'Angebots-Headline. Wird automatisch als Meta uebernommen.',
+  'nettopreis': 'Netto-Preis. Wird automatisch als Meta uebernommen.',
+  'mehrwertsteuer': 'MwSt-Satz. Wird automatisch als Meta uebernommen.',
+  'endpreis': 'Endpreis. Wird automatisch als Meta uebernommen.',
+  'rechnungsstellung': 'Rechnungsstellung. Wird automatisch als Meta uebernommen.',
+  'intervall': 'Zahlungsintervall. Wird automatisch als Meta uebernommen.',
+  'zugang': 'Zugangsart. Wird automatisch als Meta uebernommen.',
+  'type': 'Angebotstyp. Wird automatisch als Meta uebernommen.',
+  'zahlungsform': 'Zahlungsform. Wird automatisch als Meta uebernommen.',
+  'rollen_slug': 'WordPress-Rolle. Wird automatisch als Meta uebernommen.',
+  // Taxonomies — Gruppierungen
+  'mpcs-course-categories': '→ Auf "Oberkategorie" ziehen! Das sind die Kurs-Kategorien (z.B. Etappen-Einteilung).',
+  'mpcs-curriculum-categories': 'Curriculum-Kategorien. Nur bei Bedarf zuordnen.',
+  'mpcs-course-tags': 'Kurs-Tags. Nur bei Bedarf zuordnen.',
+  'mepr-product-category': 'Produkt-Kategorien. Nur bei Bedarf zuordnen.',
+  'category': 'Vorhandene WordPress-Kategorien.',
 };
 
 // ================================================================
@@ -555,23 +558,22 @@ function detect() {
 //  WORDPRESS TARGET SCHEMA
 // ================================================================
 const WP_TARGETS = [
-  { group: 'Post-Types', items: [
-    { name: 'post', type: 'post_type', desc: 'Beitrag (Lesson/Etappenstopp)' },
-    { name: 'page', type: 'post_type', desc: 'Seite' },
-    { name: 'wg_angebot', type: 'post_type', desc: 'Angebot (Produkt)' },
+  { group: '1. Inhaltstypen — Was wird woraus?', items: [
+    { name: 'post', type: 'post_type', desc: 'WordPress Beitrag ← hierher: deine Lektionen (mpcs-lesson)' },
+    { name: 'wg_angebot', type: 'post_type', desc: 'Angebot (wg_angebot) ← hierher: deine Produkte (memberpressproduct)' },
   ]},
-  { group: 'Kategorie-Hierarchie', items: [
-    { name: 'parent_category', type: 'category', desc: 'Oberkategorie', hasInput: true, inputKey: 'parentCatName', placeholder: 'z.B. Etappen' },
-    { name: 'child_category', type: 'category', desc: 'Unterkategorie (z.B. E01, E02...)' },
+  { group: '2. Kategorie-Hierarchie — Course → Section', items: [
+    { name: 'parent_category', type: 'category', desc: 'Oberkategorie (= Kurs) ← hierher: Kurs-Taxonomie oder Kurs-PostType', hasInput: true, inputKey: 'parentCatName', placeholder: 'z.B. Etappen' },
+    { name: 'child_category', type: 'category', desc: 'Unterkategorien (= Sektionen) ← hierher: Sektionen (mpcs-course), werden zu E01, E02...' },
   ]},
-  { group: 'Felder', items: [
-    { name: 'menu_order', type: 'field', desc: 'Reihenfolge / Sortierung' },
+  { group: '3. Verknuepfung — Welche Lektion gehoert zu welcher Sektion?', items: [
+    { name: 'section_join', type: 'join', desc: 'Lektion → Sektion ← hierher: das Feld _mpcs_lesson_section_id' },
   ]},
-  { group: 'Verknuepfungen', items: [
-    { name: 'section_join', type: 'join', desc: 'Lektion → Sektion (fuer Kategorie-Zuordnung)' },
+  { group: '4. Sortierung — In welcher Reihenfolge?', items: [
+    { name: 'menu_order', type: 'field', desc: 'Reihenfolge ← hierher: das Feld _mpcs_lesson_lesson_order' },
   ]},
-  { group: 'Content-Extraktion', items: [
-    { name: 'extract_chained_quiz', type: 'extract', desc: '[chained-quiz X] → Meta + aus Inhalt entfernen' },
+  { group: '5. Quiz-Extraktion — Shortcode aus Inhalt holen', items: [
+    { name: 'extract_chained_quiz', type: 'extract', desc: '[chained-quiz X] wird aus dem Inhalt extrahiert → als wg_besenwagen_code gespeichert + aus Text entfernt' },
   ]},
 ];
 
@@ -822,6 +824,7 @@ function runPipeline() {
         meta: {},
         categories: [],
         _srcId: item.postId,
+        _srcPT: srcPT,
       };
 
       // Apply meta → meta and meta → field mappings
@@ -898,24 +901,57 @@ function runPipeline() {
 
   ST.result = { posts, cats };
 
-  // === VALIDATE ===
+  // === VALIDATE (gemaess PDF-Spezifikation) ===
   const errs = [];
-  const unres = posts.filter(p => p._unresolved);
+
+  // Regel 1: Jede Lektion muss eine Sektion haben
+  const lessonPosts = posts.filter(p => ptMaps.some(m => m.tgt.name === 'post' && m.src.name === p._srcPT));
+  const unres = lessonPosts.filter(p => p._unresolved);
   if (unres.length) {
-    errs.push({ sev: 'warn', msg: unres.length + ' Lektionen ohne aufgeloeste Sektion', det: 'IDs: ' + [...new Set(unres.map(p => p._unresolved))].join(', ') });
+    errs.push({ sev: 'fail', msg: unres.length + ' Lektionen ohne aufgeloeste Sektion (PFLICHT: jede Lektion braucht eine Sektion)', det: 'Unbekannte Section-IDs: ' + [...new Set(unres.map(p => p._unresolved))].join(', ') });
   }
-  const noCat = posts.filter(p => joinMap && p.categories.length === 0 && ptMaps.some(m => m.tgt.name === p.postType));
+  const noCat = lessonPosts.filter(p => p.categories.length === 0);
   if (noCat.length) {
-    for (const p of noCat) errs.push({ sev: 'warn', msg: '"' + p.title + '" hat keine Kategorie', det: 'Section-ID: ' + (p._unresolved || 'keine') });
+    errs.push({ sev: 'fail', msg: noCat.length + ' Lektionen ohne Kategorie-Zuordnung', det: noCat.slice(0, 5).map(p => '"' + p.title + '"').join(', ') + (noCat.length > 5 ? '...' : '') });
   }
+
+  // Regel 2: Jede Sektion muss einen Namen haben
+  const emptyCats = cats.filter(c => !c.name || c.name.trim() === '');
+  if (emptyCats.length) {
+    errs.push({ sev: 'fail', msg: emptyCats.length + ' Kategorien ohne Namen', det: '' });
+  }
+
+  // Regel 3: Jeder [chained-quiz] muss extrahiert sein
+  if (extractMap) {
+    const stillHasQuiz = posts.filter(p => /\[chained-quiz\s+\d+\]/.test(p.content));
+    if (stillHasQuiz.length) {
+      errs.push({ sev: 'fail', msg: stillHasQuiz.length + ' Posts haben noch [chained-quiz] im Inhalt (sollte extrahiert sein)', det: '' });
+    }
+    const withQuizMeta = posts.filter(p => p.meta.wg_besenwagen_code);
+    errs.push({ sev: 'pass', msg: withQuizMeta.length + ' Quiz-Codes extrahiert → wg_besenwagen_code', det: '' });
+  }
+
+  // Regel 4: Keine leeren Kategorien
+  const childCats = cats.filter(c => c.parentSlug);
+  const emptySections = childCats.filter(c => !posts.some(p => p.categories.some(pc => pc.slug === c.slug)));
+  if (emptySections.length) {
+    errs.push({ sev: 'warn', msg: emptySections.length + ' Kategorien ohne zugeordnete Posts', det: emptySections.map(c => c.name).join(', ') });
+  }
+
+  // Regel 5: Keine doppelten Slugs
   const slugCheck = {};
   for (const p of posts) {
     const k = p.postType + ':' + p.slug;
     if (slugCheck[k]) errs.push({ sev: 'fail', msg: 'Doppelter Slug: "' + p.slug + '" (' + p.postType + ')', det: '' });
     else slugCheck[k] = true;
   }
-  if (cats.length) errs.push({ sev: 'pass', msg: cats.length + ' Kategorien erstellt', det: '' });
+
+  // Erfolgs-Meldungen
+  if (cats.length) errs.push({ sev: 'pass', msg: cats.length + ' Kategorien erstellt (davon ' + childCats.length + ' Unter-Kategorien)', det: '' });
   if (posts.length) errs.push({ sev: 'pass', msg: posts.length + ' Posts transformiert', det: '' });
+  const assignedLessons = lessonPosts.filter(p => p.categories.length > 0);
+  if (assignedLessons.length) errs.push({ sev: 'pass', msg: assignedLessons.length + '/' + lessonPosts.length + ' Lektionen haben Kategorie-Zuordnung', det: '' });
+
   errs.sort((a, b) => ({fail:0,warn:1,pass:2}[a.sev]||0) - ({fail:0,warn:1,pass:2}[b.sev]||0));
   ST.validation = { errs, pass: errs.filter(e=>e.sev==='pass').length, warn: errs.filter(e=>e.sev==='warn').length, fail: errs.filter(e=>e.sev==='fail').length };
 }
