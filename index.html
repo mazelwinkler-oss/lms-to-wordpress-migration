@@ -226,17 +226,10 @@ tr:hover td { background: rgba(255,255,255,0.02); }
       <h2>Drag &amp; Drop Mapping</h2>
       <p class="hint">Ziehe die erkannten Quell-Felder (links, orange) auf die passenden WordPress-Zielfelder (rechts, gruen). Jede Zuordnung wird sofort sichtbar.</p>
       <div class="mapping-guide" id="mapping-guide">
-        <strong>MemberPress → WordPress Mapping (laut Spezifikation):</strong>
-        <ul>
-          <li><strong>mpcs-lesson</strong> (deine Lektionen) <span class="arrow">→</span> auf <strong>"WordPress Beitrag"</strong> ziehen</li>
-          <li><strong>memberpressproduct</strong> (deine Produkte) <span class="arrow">→</span> auf <strong>"Angebot (wg_angebot)"</strong> ziehen</li>
-          <li><strong>mpcs-course</strong> (deine Sektionen) <span class="arrow">→</span> auf <strong>"Unterkategorien"</strong> ziehen — werden zu Kategorien wie E01, E02...</li>
-          <li><strong>mpcs-course-categories</strong> (Taxonomie) <span class="arrow">→</span> auf <strong>"Oberkategorie"</strong> ziehen + Namen eingeben (z.B. "Etappen")</li>
-          <li><strong>_mpcs_lesson_section_id</strong> <span class="arrow">→</span> auf <strong>"Lektion → Sektion"</strong> ziehen — verknuepft Lektionen mit ihren Sektionen</li>
-          <li><strong>_mpcs_lesson_lesson_order</strong> <span class="arrow">→</span> auf <strong>"Reihenfolge"</strong> ziehen — bestimmt die Sortierung</li>
-          <li><strong>[chained-quiz X]</strong> <span class="arrow">→</span> auf <strong>"Quiz-Extraktion"</strong> ziehen — wird aus Text geholt und als wg_besenwagen_code gespeichert</li>
-        </ul>
-        <em>Ziehe nur die Felder rueber, die du brauchst. Die Nummern rechts zeigen die empfohlene Reihenfolge.</em>
+        <strong>Schnellstart:</strong> Klicke den Button um alle Zuordnungen automatisch nach der MemberPress-Spezifikation zu setzen. Du kannst danach einzelne Zuordnungen anpassen.
+        <div class="gap" style="margin-top:0.5rem;">
+          <button class="btn btn-g" id="btn-auto-map">Auto-Mapping anwenden (MemberPress → WordPress)</button>
+        </div>
       </div>
       <div class="dnd" id="dnd">
         <div class="dnd-col">
@@ -590,6 +583,55 @@ const WP_TARGETS = [
 ];
 
 // ================================================================
+//  AUTO-MAPPING (applies PDF spec rules automatically)
+// ================================================================
+function autoMap() {
+  const d = ST.detected;
+  if (!d) { toast('Erst Dateien hochladen', 't-err'); return; }
+  ST.mappings = [];
+  let count = 0;
+
+  // Helper: find source
+  const findPT = name => d.postTypes.find(p => p.name === name);
+  const findMeta = (name, pt) => d.metaKeys.find(m => m.name === name && (!pt || m.postType === pt));
+  const findTax = name => d.taxonomies.find(t => t.name === name);
+  const findPattern = name => d.patterns.find(p => p.name === name);
+
+  // 1. mpcs-lesson → post
+  let pt = findPT('mpcs-lesson');
+  if (pt) { ST.mappings.push({ src: { type:'post_type', name:'mpcs-lesson', fileIdx:pt.fileIdx }, tgt: { name:'post', type:'post_type' }}); count++; }
+
+  // 2. memberpressproduct OR wg_angebot → wg_angebot
+  pt = findPT('memberpressproduct') || findPT('wg_angebot');
+  if (pt) { ST.mappings.push({ src: { type:'post_type', name:pt.name, fileIdx:pt.fileIdx }, tgt: { name:'wg_angebot', type:'post_type' }}); count++; }
+
+  // 3. mpcs-course → child_category (sections become categories)
+  pt = findPT('mpcs-course');
+  if (pt) { ST.mappings.push({ src: { type:'post_type', name:'mpcs-course', fileIdx:pt.fileIdx }, tgt: { name:'child_category', type:'category' }}); count++; }
+
+  // 4. mpcs-course-categories → parent_category
+  let tx = findTax('mpcs-course-categories');
+  if (tx) { ST.mappings.push({ src: { type:'taxonomy', name:'mpcs-course-categories', fileIdx:tx.fileIdx }, tgt: { name:'parent_category', type:'category' }}); count++; }
+  ST.parentCatName = 'Etappen';
+
+  // 5. _mpcs_lesson_section_id → section_join
+  let mk = findMeta('_mpcs_lesson_section_id');
+  if (mk) { ST.mappings.push({ src: { type:'meta', name:'_mpcs_lesson_section_id', fileIdx:mk.fileIdx, postType:mk.postType }, tgt: { name:'section_join', type:'join' }}); count++; }
+
+  // 6. _mpcs_lesson_lesson_order → menu_order
+  mk = findMeta('_mpcs_lesson_lesson_order');
+  if (mk) { ST.mappings.push({ src: { type:'meta', name:'_mpcs_lesson_lesson_order', fileIdx:mk.fileIdx, postType:mk.postType }, tgt: { name:'menu_order', type:'field' }}); count++; }
+
+  // 7. [chained-quiz] → extract
+  let cp = findPattern('[chained-quiz]');
+  if (cp) { ST.mappings.push({ src: { type:'pattern', name:'[chained-quiz]', fileIdx:cp.fileIdx }, tgt: { name:'extract_chained_quiz', type:'extract' }}); count++; }
+
+  renderDnD();
+  renderPairs();
+  toast(count + ' Zuordnungen automatisch gesetzt!', 't-ok');
+}
+
+// ================================================================
 //  DRAG & DROP MAPPING
 // ================================================================
 let _drag = null; // current drag data
@@ -843,7 +885,7 @@ function runPipeline() {
     for (const item of fd.items) {
       const it = { ...item, _fi: idx };
       allItems.push(it);
-      byId[item.postId] = it;
+      byId[String(item.postId)] = it;
     }
   }
 
@@ -864,17 +906,15 @@ function runPipeline() {
     cats.push(parentCat);
   }
 
-  // Child categories
+  // Child categories from post types (mpcs-course → child categories)
   if (catMap) {
     const src = catMap.src;
     if (src.type === 'post_type') {
-      // Post titles become category names
       const items = allItems.filter(i => i.postType === src.name);
       for (const it of items) {
-        cats.push({ termId: catId++, name: it.title, slug: it.slug || slug(it.title), parentSlug: parentCat?.slug || '', _srcId: it.postId });
+        cats.push({ termId: catId++, name: it.title, slug: it.slug || slug(it.title), parentSlug: parentCat?.slug || '', _srcId: String(it.postId) });
       }
     } else if (src.type === 'taxonomy') {
-      // Taxonomy terms become categories
       const seen = new Set();
       for (const it of allItems) {
         for (const tx of it.taxonomies) {
@@ -885,6 +925,17 @@ function runPipeline() {
         }
       }
     }
+  }
+
+  // === BUILD LOOKUP MAPS for O(1) section resolution ===
+  const secIdToCat = {};   // section postId → category
+  const taxSlugToCat = {}; // taxonomy slug → category
+  const slugToCat = {};    // slug → category
+  const nameToCat = {};    // name → category
+  for (const c of cats) {
+    if (c._srcId) secIdToCat[String(c._srcId)] = c;
+    if (c._taxSlug) taxSlugToCat[c._taxSlug] = c;
+    if (c.slug && c.parentSlug) { slugToCat[c.slug] = c; nameToCat[c.name] = c; }
   }
 
   // === TRANSFORM POSTS ===
@@ -928,8 +979,8 @@ function runPipeline() {
         }
       }
 
-      // Extract [chained-quiz] → meta + strip
-      if (extractMap && extractMap.src.fileIdx === item._fi) {
+      // Extract [chained-quiz] → meta + strip (for any post type that has it)
+      if (extractMap) {
         const m = post.content.match(/\[chained-quiz\s+\d+\]/);
         if (m) {
           post.meta.wg_besenwagen_code = m[0];
@@ -937,28 +988,41 @@ function runPipeline() {
         }
       }
 
-      // Resolve section join → category
+      // Resolve section join → category using lookup maps
       if (joinMap && joinMap.src.type === 'meta') {
-        const secId = item.meta[joinMap.src.name];
+        const secId = String(item.meta[joinMap.src.name] || '');
         if (secId) {
-          let mc = cats.find(c => c._srcId === secId);
+          // Strategy 1: Direct lookup by source post_id
+          let mc = secIdToCat[secId];
+
+          // Strategy 2: Lookup via section item's slug/name
           if (!mc) {
             const secItem = byId[secId];
             if (secItem) {
-              mc = cats.find(c => c.slug === secItem.slug || c.name === secItem.title);
+              mc = slugToCat[secItem.slug] || nameToCat[secItem.title];
+              // Strategy 3: Lookup via section item's taxonomy terms
               if (!mc) {
                 for (const tx of secItem.taxonomies) {
-                  mc = cats.find(c => c._taxSlug === tx.slug);
+                  mc = taxSlugToCat[tx.slug];
                   if (mc) break;
                 }
               }
+              // Strategy 4: Create missing category from section item
+              if (!mc && secItem.title) {
+                const newCat = { termId: catId++, name: secItem.title, slug: secItem.slug || slug(secItem.title), parentSlug: parentCat?.slug || '', _srcId: String(secItem.postId) };
+                cats.push(newCat);
+                secIdToCat[String(secItem.postId)] = newCat;
+                slugToCat[newCat.slug] = newCat;
+                nameToCat[newCat.name] = newCat;
+                mc = newCat;
+              }
             }
           }
+
           if (mc) {
             post.categories.push({ name: mc.name, slug: mc.slug });
-            if (mc.parentSlug) {
-              const pc = cats.find(c => c.slug === mc.parentSlug);
-              if (pc) post.categories.push({ name: pc.name, slug: pc.slug });
+            if (mc.parentSlug && parentCat) {
+              post.categories.push({ name: parentCat.name, slug: parentCat.slug });
             }
           } else {
             post._unresolved = secId;
@@ -973,9 +1037,9 @@ function runPipeline() {
         }
       }
 
-      // Passthrough non-internal meta
+      // Passthrough non-internal meta (all non-_ prefixed meta fields)
       for (const [k, v] of Object.entries(item.meta)) {
-        if (!k.startsWith('_') && v && !post.meta[k]) {
+        if (!k.startsWith('_') && v != null && v !== '' && !post.meta[k]) {
           post.meta[k] = v;
         }
       }
@@ -1247,6 +1311,9 @@ function init() {
   $('btn-back-1').onclick = () => goTo(0);
   $('btn-back-2').onclick = () => goTo(1);
   $('btn-back-3').onclick = () => goTo(2);
+
+  // Auto-mapping button
+  $('btn-auto-map').onclick = () => autoMap();
 
   // Upload slot controls
   $('btn-add-slot').onclick = () => { ST.slots++; renderUpload(); };
