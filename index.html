@@ -86,6 +86,11 @@ header p { color: var(--text2); font-size: 0.82rem; }
 .src-item:hover { background: var(--orange3); transform: translateX(2px); }
 .src-item:active { cursor: grabbing; opacity: 0.7; }
 .src-item.used { opacity: 0.3; cursor: default; border-style: dashed; pointer-events: none; }
+.src-item.auto { background: rgba(74,222,128,0.08); border-color: rgba(74,222,128,0.15); color: var(--text3); cursor: default; opacity: 0.6; }
+.src-item.auto .tag { background: rgba(74,222,128,0.2); color: var(--green); }
+.src-item.auto .nm { color: var(--text3); }
+.src-item.auto .desc { color: var(--text3); }
+.src-item.auto:hover { opacity: 0.8; background: rgba(74,222,128,0.12); }
 .src-item .tag { font-size: 0.6rem; padding: 0.1rem 0.4rem; border-radius: 3px; background: rgba(0,0,0,0.3); color: var(--text3); text-transform: uppercase; flex-shrink: 0; font-weight: 700; }
 .src-item .nm { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .src-item .cnt { font-size: 0.65rem; color: var(--text3); flex-shrink: 0; }
@@ -630,25 +635,47 @@ function renderDnD() {
     sh += '</div>';
   }
 
-  // Meta keys grouped by post type
+  // Meta keys grouped by post type, split into manual vs auto
   const mbp = {};
   for (const mk of d.metaKeys) {
     if (!mbp[mk.postType]) mbp[mk.postType] = [];
     if (!mbp[mk.postType].some(m => m.name === mk.name)) mbp[mk.postType].push(mk);
   }
   for (const [pt, mks] of Object.entries(mbp)) {
-    const ptHint = HINTS[pt] ? ' — ' + HINTS[pt] : '';
-    sh += `<div class="grp"><div class="grp-title">Zusatzfelder von: ${esc(pt)}${esc(ptHint)}</div>`;
-    for (const mk of mks) {
-      const used = ST.mappings.some(m => m.src.type === 'meta' && m.src.name === mk.name && m.src.postType === pt);
-      const hint = mk.hint ? `<span class="desc">${esc(mk.hint)}</span>` : '';
-      const preview = mk.samples.length ? `<span class="preview">Werte: ${samp(mk.samples, 30).map(esc).join(', ')}</span>` : '';
-      sh += `<div class="src-item${used?' used':''}" draggable="${!used}" data-t="meta" data-n="${esc(mk.name)}" data-f="${esc(mk.fileIdx)}" data-pt="${esc(pt)}">
-        <div class="row1"><span class="tag">meta</span><span class="nm">${esc(mk.name)}</span></div>
-        ${hint}${preview}
-      </div>`;
+    // Split: fields starting with _ need manual mapping, others are auto-passthrough
+    const manual = mks.filter(mk => mk.name.startsWith('_'));
+    const auto = mks.filter(mk => !mk.name.startsWith('_'));
+
+    // Manual fields first (orange, draggable)
+    if (manual.length) {
+      const ptHint = HINTS[pt] ? ' — ' + HINTS[pt] : '';
+      sh += `<div class="grp"><div class="grp-title">Braucht Zuordnung (${esc(pt)}${esc(ptHint)})</div>`;
+      for (const mk of manual) {
+        const used = ST.mappings.some(m => m.src.type === 'meta' && m.src.name === mk.name && m.src.postType === pt);
+        const hint = mk.hint ? `<span class="desc">${esc(mk.hint)}</span>` : '';
+        const preview = mk.samples.length ? `<span class="preview">Werte: ${samp(mk.samples, 30).map(esc).join(', ')}</span>` : '';
+        sh += `<div class="src-item${used?' used':''}" draggable="${!used}" data-t="meta" data-n="${esc(mk.name)}" data-f="${esc(mk.fileIdx)}" data-pt="${esc(pt)}">
+          <div class="row1"><span class="tag">meta</span><span class="nm">${esc(mk.name)}</span></div>
+          ${hint}${preview}
+        </div>`;
+      }
+      sh += '</div>';
     }
-    sh += '</div>';
+
+    // Auto-passthrough fields (green/dimmed, not draggable by default)
+    if (auto.length) {
+      sh += `<div class="grp"><div class="grp-title">Wird automatisch uebernommen (${esc(pt)}) — ${auto.length} Felder</div>`;
+      for (const mk of auto) {
+        const used = ST.mappings.some(m => m.src.type === 'meta' && m.src.name === mk.name && m.src.postType === pt);
+        const hint = mk.hint ? `<span class="desc">${esc(mk.hint)}</span>` : `<span class="desc">Wird 1:1 als WordPress-Meta uebernommen</span>`;
+        const preview = mk.samples.length ? `<span class="preview">Werte: ${samp(mk.samples, 30).map(esc).join(', ')}</span>` : '';
+        sh += `<div class="src-item auto${used?' used':''}" draggable="${!used}" data-t="meta" data-n="${esc(mk.name)}" data-f="${esc(mk.fileIdx)}" data-pt="${esc(pt)}">
+          <div class="row1"><span class="tag">auto</span><span class="nm">${esc(mk.name)}</span></div>
+          ${hint}${preview}
+        </div>`;
+      }
+      sh += '</div>';
+    }
   }
 
   // Content patterns
