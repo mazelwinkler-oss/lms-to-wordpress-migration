@@ -1,0 +1,1174 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LMS → WordPress Migration Tool</title>
+<style>
+/* ===== RESET + VARS ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0f1117; --bg2: #1a1d27; --bg3: #242836; --bg4: #2e3345;
+  --text: #e2e4ed; --text2: #9ca0b0; --text3: #6b7084;
+  --accent: #6c8aff; --accent2: #4e6ae6; --glow: rgba(108,138,255,0.15);
+  --green: #4ade80; --green2: rgba(74,222,128,0.12); --green3: rgba(74,222,128,0.25);
+  --orange: #fb923c; --orange2: rgba(251,146,60,0.12); --orange3: rgba(251,146,60,0.25);
+  --red: #f87171; --red2: rgba(248,113,113,0.12);
+  --yellow: #facc15; --yellow2: rgba(250,204,21,0.12);
+  --radius: 8px; --radius-lg: 12px;
+}
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; min-height: 100vh; }
+button { cursor: pointer; font-family: inherit; font-size: 0.85rem; }
+input, select, textarea { font-family: inherit; font-size: 0.85rem; background: var(--bg3); border: 1px solid var(--bg4); color: var(--text); border-radius: var(--radius); padding: 0.5rem 0.75rem; outline: none; }
+input:focus { border-color: var(--accent); }
+
+/* ===== LAYOUT ===== */
+.app { max-width: 1400px; margin: 0 auto; padding: 1rem 1.5rem; }
+header { text-align: center; margin-bottom: 1.5rem; }
+header h1 { font-size: 1.5rem; font-weight: 700; }
+header h1 span { color: var(--accent); }
+header p { color: var(--text2); font-size: 0.82rem; }
+
+/* ===== STEPPER ===== */
+.stepper { display: flex; gap: 0; margin-bottom: 1.5rem; border-radius: var(--radius-lg); overflow: hidden; background: var(--bg2); }
+.step-btn { flex: 1; padding: 0.65rem; text-align: center; font-size: 0.8rem; font-weight: 600; color: var(--text3); background: var(--bg2); border: none; border-bottom: 3px solid transparent; transition: 0.2s; }
+.step-btn:hover { color: var(--text2); background: var(--bg3); }
+.step-btn.active { color: var(--accent); border-bottom-color: var(--accent); background: var(--bg3); }
+.step-btn.done { color: var(--green); }
+.step-btn .n { display: inline-block; width: 1.4rem; height: 1.4rem; line-height: 1.4rem; border-radius: 50%; background: var(--bg4); font-size: 0.7rem; margin-right: 0.3rem; }
+.step-btn.active .n { background: var(--accent); color: #fff; }
+.step-btn.done .n { background: var(--green); color: #000; }
+
+/* ===== PANELS ===== */
+.panel { display: none; } .panel.show { display: block; }
+.card { background: var(--bg2); border-radius: var(--radius-lg); padding: 1.25rem; margin-bottom: 1rem; border: 1px solid var(--bg3); }
+.card h2 { font-size: 1.05rem; margin-bottom: 0.5rem; }
+.card h3 { font-size: 0.92rem; color: var(--text2); margin-bottom: 0.4rem; }
+.hint { font-size: 0.78rem; color: var(--text3); margin-bottom: 0.75rem; }
+
+/* ===== BUTTONS ===== */
+.btn { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.5rem 1rem; border-radius: var(--radius); font-weight: 600; border: none; font-size: 0.82rem; transition: 0.2s; }
+.btn-p { background: var(--accent); color: #fff; } .btn-p:hover { background: var(--accent2); }
+.btn-s { background: var(--bg3); color: var(--text); } .btn-s:hover { background: var(--bg4); }
+.btn-d { background: var(--red); color: #fff; }
+.btn-g { background: var(--green); color: #000; } .btn-g:hover { opacity: 0.9; }
+.btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.btn-sm { padding: 0.35rem 0.7rem; font-size: 0.75rem; }
+.gap { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.nav-row { display: flex; justify-content: space-between; margin-top: 1.25rem; }
+
+/* ===== STEP 1 — UPLOAD ===== */
+.upload-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 0.75rem; }
+.uz { border: 2px dashed var(--bg4); border-radius: var(--radius-lg); padding: 1.8rem 1rem; text-align: center; cursor: pointer; transition: 0.2s; }
+.uz:hover, .uz.over { border-color: var(--accent); background: var(--glow); }
+.uz.ok { border-color: var(--green); border-style: solid; background: var(--green2); }
+.uz .ico { font-size: 2rem; margin-bottom: 0.3rem; }
+.uz .lbl { font-weight: 600; font-size: 0.88rem; }
+.uz .info { font-size: 0.75rem; color: var(--text2); margin-top: 0.2rem; }
+.uz .stats { font-size: 0.8rem; color: var(--green); margin-top: 0.4rem; font-weight: 600; }
+
+/* ===== STEP 2 — DRAG & DROP ===== */
+.dnd { display: grid; grid-template-columns: 1fr 60px 1fr; gap: 0; min-height: 500px; }
+.dnd-col { background: var(--bg2); border: 1px solid var(--bg3); border-radius: var(--radius-lg); overflow: hidden; }
+.dnd-head { padding: 0.7rem 1rem; font-weight: 700; font-size: 0.88rem; text-align: center; }
+.dnd-head.src { background: var(--orange2); color: var(--orange); border-bottom: 2px solid var(--orange); }
+.dnd-head.tgt { background: var(--green2); color: var(--green); border-bottom: 2px solid var(--green); }
+.dnd-body { padding: 0.5rem; max-height: 650px; overflow-y: auto; }
+.dnd-mid { display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text3); font-size: 2rem; gap: 0.5rem; }
+.dnd-mid small { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; }
+
+/* Groups */
+.grp { margin-bottom: 0.8rem; }
+.grp-title { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text3); padding: 0.3rem 0.5rem; font-weight: 700; border-bottom: 1px solid var(--bg4); margin-bottom: 0.3rem; }
+
+/* Draggable source items */
+.src-item { display: flex; align-items: center; gap: 0.5rem; padding: 0.45rem 0.7rem; margin: 3px 0; border-radius: var(--radius); font-size: 0.82rem; cursor: grab; transition: 0.15s; border: 1px solid var(--orange3); background: var(--orange2); color: var(--orange); user-select: none; }
+.src-item:hover { background: var(--orange3); transform: translateX(2px); }
+.src-item:active { cursor: grabbing; opacity: 0.7; }
+.src-item.used { opacity: 0.3; cursor: default; border-style: dashed; pointer-events: none; }
+.src-item .tag { font-size: 0.6rem; padding: 0.1rem 0.4rem; border-radius: 3px; background: rgba(0,0,0,0.3); color: var(--text3); text-transform: uppercase; flex-shrink: 0; font-weight: 700; }
+.src-item .nm { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.src-item .cnt { font-size: 0.65rem; color: var(--text3); flex-shrink: 0; }
+.src-item .desc { font-size: 0.68rem; color: var(--text2); display: block; margin-top: 1px; font-weight: 400; white-space: normal; line-height: 1.3; }
+.src-item .preview { font-size: 0.62rem; color: var(--text3); display: block; margin-top: 2px; font-style: italic; white-space: normal; line-height: 1.3; max-height: 2.6em; overflow: hidden; }
+.src-item { flex-wrap: wrap; }
+.src-item .row1 { display: flex; align-items: center; gap: 0.5rem; width: 100%; }
+.mapping-guide { background: var(--bg3); border: 1px solid var(--bg4); border-radius: var(--radius); padding: 0.75rem 1rem; margin-bottom: 0.75rem; font-size: 0.78rem; line-height: 1.6; color: var(--text2); }
+.mapping-guide strong { color: var(--accent); }
+.mapping-guide .arrow { color: var(--green); font-weight: 700; }
+.mapping-guide ul { margin: 0.3rem 0 0 1.2rem; }
+.mapping-guide li { margin-bottom: 0.15rem; }
+
+/* Drop targets */
+.tgt-slot { background: var(--bg3); border: 2px dashed var(--bg4); border-radius: var(--radius); padding: 0.5rem 0.7rem; margin: 3px 0; min-height: 2.4rem; display: flex; align-items: center; gap: 0.5rem; font-size: 0.82rem; transition: 0.2s; }
+.tgt-slot:hover { border-color: var(--green); }
+.tgt-slot.drag-hover { border-color: var(--green); background: var(--green2); border-style: solid; transform: scale(1.01); }
+.tgt-slot.filled { border-color: var(--green); border-style: solid; background: var(--green2); }
+.tgt-slot .t-tag { font-size: 0.6rem; padding: 0.1rem 0.4rem; border-radius: 3px; background: rgba(0,0,0,0.3); color: var(--text3); text-transform: uppercase; flex-shrink: 0; font-weight: 700; }
+.tgt-slot .t-label { color: var(--green); font-weight: 500; flex: 1; font-size: 0.8rem; }
+.tgt-slot .mapped { background: var(--orange3); color: var(--orange); padding: 0.2rem 0.6rem; border-radius: var(--radius); font-size: 0.78rem; display: inline-flex; align-items: center; gap: 0.4rem; font-weight: 600; }
+.tgt-slot .mapped .x { cursor: pointer; opacity: 0.6; font-size: 1rem; line-height: 1; }
+.tgt-slot .mapped .x:hover { opacity: 1; color: var(--red); }
+.tgt-slot .t-input { padding: 0.2rem 0.4rem; font-size: 0.75rem; width: 110px; background: var(--bg); border: 1px solid var(--bg4); border-radius: 4px; color: var(--text); }
+
+/* Mapping list */
+.pair { display: flex; align-items: center; gap: 0.5rem; padding: 0.35rem 0.6rem; margin: 2px 0; border-radius: var(--radius); background: var(--bg3); font-size: 0.78rem; }
+.pair .p-s { color: var(--orange); flex: 1; font-weight: 500; }
+.pair .p-a { color: var(--text3); }
+.pair .p-t { color: var(--green); flex: 1; text-align: right; font-weight: 500; }
+.pair .p-x { color: var(--red); cursor: pointer; opacity: 0.4; margin-left: 0.4rem; font-size: 1rem; }
+.pair .p-x:hover { opacity: 1; }
+
+/* ===== STEP 3 — PREVIEW ===== */
+.tabs { display: flex; gap: 0; border-bottom: 2px solid var(--bg3); margin-bottom: 0.75rem; }
+.tab { padding: 0.5rem 0.85rem; font-size: 0.82rem; font-weight: 600; color: var(--text3); background: none; border: none; border-bottom: 2px solid transparent; margin-bottom: -2px; cursor: pointer; }
+.tab.on { color: var(--accent); border-bottom-color: var(--accent); }
+.tab-panel { display: none; } .tab-panel.on { display: block; }
+table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+th { text-align: left; padding: 0.5rem 0.6rem; background: var(--bg3); color: var(--text2); font-weight: 600; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; }
+td { padding: 0.5rem 0.6rem; border-bottom: 1px solid var(--bg3); }
+tr:hover td { background: rgba(255,255,255,0.02); }
+.tree-node { padding: 0.35rem 0; padding-left: 1.5rem; position: relative; }
+.tree-node::before { content: ''; position: absolute; left: 0.5rem; top: 0; bottom: 0; width: 1px; background: var(--bg4); }
+.tree-node::after { content: ''; position: absolute; left: 0.5rem; top: 50%; width: 0.75rem; height: 1px; background: var(--bg4); }
+.tree-root { padding-left: 0; } .tree-root::before, .tree-root::after { display: none; }
+.badge { display: inline-block; font-size: 0.65rem; padding: 0.1rem 0.4rem; border-radius: 999px; margin-left: 0.4rem; font-weight: 600; }
+.b-p { background: var(--glow); color: var(--accent); }
+.b-c { background: var(--green2); color: var(--green); }
+.b-n { background: var(--bg4); color: var(--text2); }
+
+/* Validation */
+.v-item { display: flex; gap: 0.5rem; padding: 0.45rem 0; border-bottom: 1px solid var(--bg3); align-items: flex-start; }
+.v-ico { width: 1.2rem; text-align: center; flex-shrink: 0; font-size: 0.9rem; }
+.v-ok { color: var(--green); } .v-warn { color: var(--yellow); } .v-err { color: var(--red); }
+.v-msg { font-size: 0.82rem; } .v-msg small { color: var(--text3); display: block; font-size: 0.72rem; }
+.v-bar { display: flex; gap: 0.75rem; margin-bottom: 0.75rem; }
+.v-badge { padding: 0.4rem 0.75rem; border-radius: var(--radius); font-weight: 700; font-size: 0.82rem; }
+
+/* ===== STEP 4 — EXPORT ===== */
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.75rem; margin-bottom: 1rem; }
+.stat { background: var(--bg3); border-radius: var(--radius); padding: 0.75rem; text-align: center; }
+.stat .num { font-size: 1.6rem; font-weight: 700; color: var(--accent); }
+.stat .lbl { font-size: 0.7rem; color: var(--text2); text-transform: uppercase; }
+.xml-box { background: var(--bg); border: 1px solid var(--bg3); border-radius: var(--radius); padding: 0.75rem; font-family: 'Courier New', monospace; font-size: 0.72rem; max-height: 280px; overflow: auto; white-space: pre; color: var(--text2); margin-top: 0.75rem; }
+.cfg { display: grid; grid-template-columns: 110px 1fr; gap: 0.5rem; align-items: center; margin-bottom: 0.4rem; }
+.cfg label { font-size: 0.82rem; color: var(--text2); }
+
+/* ===== PROCESS CARDS ===== */
+.proc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 0.75rem; margin: 0.75rem 0; }
+.proc { background: var(--bg3); border: 2px solid var(--bg4); border-radius: var(--radius-lg); padding: 1rem; cursor: pointer; transition: 0.2s; text-align: center; }
+.proc:hover { border-color: var(--accent); background: var(--glow); }
+.proc.sel { border-color: var(--accent); background: var(--glow); }
+.proc .p-ico { font-size: 1.5rem; }
+.proc .p-name { font-weight: 700; font-size: 0.92rem; margin-top: 0.2rem; }
+.proc .p-desc { font-size: 0.75rem; color: var(--text3); margin-top: 0.15rem; }
+
+/* ===== TOAST ===== */
+.toasts { position: fixed; bottom: 1rem; right: 1rem; z-index: 999; display: flex; flex-direction: column; gap: 0.4rem; }
+.toast { padding: 0.6rem 1rem; border-radius: var(--radius); font-size: 0.82rem; font-weight: 600; animation: slideIn 0.3s ease; }
+.t-ok { background: var(--green); color: #000; }
+.t-err { background: var(--red); color: #fff; }
+.t-info { background: var(--accent); color: #fff; }
+@keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: none; opacity: 1; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>LMS <span>&rarr;</span> WordPress <span>Migration Tool</span></h1>
+    <p>Drag &amp; Drop Mapping — einmal zuordnen, immer wieder nutzen</p>
+  </header>
+
+  <nav class="stepper" id="stepper">
+    <button class="step-btn active" data-s="0"><span class="n">1</span>Dateien</button>
+    <button class="step-btn" data-s="1"><span class="n">2</span>Mapping</button>
+    <button class="step-btn" data-s="2"><span class="n">3</span>Vorschau</button>
+    <button class="step-btn" data-s="3"><span class="n">4</span>Export</button>
+  </nav>
+
+  <!-- ===== STEP 1 — FILES ===== -->
+  <div class="panel show" id="p0">
+    <div class="card">
+      <h2>XML-Dateien hochladen</h2>
+      <p class="hint">Lade die XML-Export-Dateien deiner Quellplattform hoch. Das Tool erkennt automatisch alle Post-Types, Meta-Keys, Taxonomien und Content-Muster.</p>
+      <div class="upload-grid" id="upload-grid"></div>
+      <div class="gap" style="margin-top:0.75rem;">
+        <button class="btn btn-s btn-sm" id="btn-add-slot">+ Weiteren Upload-Slot</button>
+        <button class="btn btn-s btn-sm" id="btn-rm-slot">- Slot entfernen</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Gespeicherte Prozesse</h2>
+      <p class="hint">Falls du bereits ein Mapping erstellt hast, lade es hier. Die Zuordnungen werden in Schritt 2 vorausgefuellt.</p>
+      <div class="proc-grid" id="proc-grid"></div>
+    </div>
+
+    <div class="nav-row">
+      <div></div>
+      <button class="btn btn-p" id="btn-to-mapping" disabled>Weiter zum Mapping &rarr;</button>
+    </div>
+  </div>
+
+  <!-- ===== STEP 2 — DRAG & DROP MAPPING ===== -->
+  <div class="panel" id="p1">
+    <div class="card">
+      <h2>Drag &amp; Drop Mapping</h2>
+      <p class="hint">Ziehe die erkannten Quell-Felder (links, orange) auf die passenden WordPress-Zielfelder (rechts, gruen). Jede Zuordnung wird sofort sichtbar.</p>
+      <div class="mapping-guide" id="mapping-guide">
+        <strong>Kurzanleitung:</strong> Jedes orange Feld links ist etwas, das in deiner XML gefunden wurde. Ziehe es auf das passende gruene Feld rechts — das bestimmt, wo es in WordPress landen soll.
+        <ul>
+          <li><strong>Post-Types</strong> = Inhaltstypen. Ziehe z.B. deine <strong>Lektionen</strong> auf "Beitrag", deine <strong>Kurse/Sektionen</strong> auf "Unterkategorie", deine <strong>Produkte</strong> auf "Angebot".</li>
+          <li><strong>Taxonomien</strong> = Gruppierungen. Wenn du Etappen-Kategorien hast, ziehe sie auf "Unterkategorie" oder "Oberkategorie".</li>
+          <li><strong>Zusatzfelder (Meta)</strong> = Verknuepfungs- und Sortierfelder. Die <strong>section_id</strong> verknuepft Lektionen mit Sektionen, die <strong>lesson_order</strong> bestimmt die Reihenfolge.</li>
+          <li><strong>Content-Muster</strong> = Shortcodes im Text, die extrahiert werden sollen (z.B. Quiz-Codes).</li>
+        </ul>
+        <em>Nicht alle Felder muessen zugeordnet werden — nur die, die du in WordPress brauchst!</em>
+      </div>
+      <div class="dnd" id="dnd">
+        <div class="dnd-col">
+          <div class="dnd-head src" id="src-head">Quelle (erkannt)</div>
+          <div class="dnd-body" id="src-body"></div>
+        </div>
+        <div class="dnd-mid">
+          <span>&rarr;</span>
+          <small>Drag</small>
+        </div>
+        <div class="dnd-col">
+          <div class="dnd-head tgt">WordPress (Ziel)</div>
+          <div class="dnd-body" id="tgt-body"></div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Aktuelle Zuordnungen (<span id="pair-count">0</span>)</h2>
+      <div id="pairs-list"></div>
+    </div>
+    <div class="card">
+      <h2>Prozess speichern</h2>
+      <p class="hint">Speichere dieses Mapping als wiederverwendbaren Prozess, z.B. "MemberPress to WordPress".</p>
+      <div class="cfg">
+        <label>Prozess-Name:</label>
+        <input type="text" id="proc-name" placeholder="z.B. MemberPress → WordPress">
+      </div>
+      <div class="gap" style="margin-top:0.5rem;">
+        <button class="btn btn-g btn-sm" id="btn-save-proc">Prozess speichern</button>
+        <button class="btn btn-s btn-sm" id="btn-clear-map">Alle Zuordnungen loeschen</button>
+      </div>
+    </div>
+    <div class="nav-row">
+      <button class="btn btn-s" id="btn-back-1">&larr; Zurueck</button>
+      <button class="btn btn-p" id="btn-to-preview">Vorschau &rarr;</button>
+    </div>
+  </div>
+
+  <!-- ===== STEP 3 — PREVIEW ===== -->
+  <div class="panel" id="p2">
+    <div class="card">
+      <h2>Vorschau &amp; Validierung</h2>
+      <div class="v-bar" id="v-bar"></div>
+      <div class="tabs" id="pv-tabs"></div>
+      <div id="pv-panels"></div>
+      <div id="v-list" style="margin-top:1rem;"></div>
+    </div>
+    <div class="nav-row">
+      <button class="btn btn-s" id="btn-back-2">&larr; Zurueck</button>
+      <button class="btn btn-p" id="btn-to-export">Export &rarr;</button>
+    </div>
+  </div>
+
+  <!-- ===== STEP 4 — EXPORT ===== -->
+  <div class="panel" id="p3">
+    <div class="card">
+      <h2>WXR Export</h2>
+      <div class="stat-grid" id="exp-stats"></div>
+      <div class="cfg">
+        <label>Site URL:</label>
+        <input type="text" id="exp-url" value="https://example.com">
+      </div>
+      <div class="cfg">
+        <label>Author:</label>
+        <input type="text" id="exp-author" value="admin">
+      </div>
+      <div class="gap" style="margin-top:0.75rem;">
+        <button class="btn btn-p" id="btn-gen">WXR generieren</button>
+        <button class="btn btn-g" id="btn-dl" disabled>Download .xml</button>
+      </div>
+      <div class="xml-box" id="xml-box" style="display:none;"></div>
+    </div>
+    <div class="nav-row">
+      <button class="btn btn-s" id="btn-back-3">&larr; Zurueck</button>
+      <div></div>
+    </div>
+  </div>
+</div>
+<div class="toasts" id="toasts"></div>
+
+<script>
+// ================================================================
+//  STATE
+// ================================================================
+const ST = {
+  step: 0,
+  slots: 3,                    // number of upload slots
+  files: {},                    // slotIdx -> { name, items[] }
+  detected: null,               // auto-detected source structure
+  mappings: [],                 // [{ src:{type,name,fileIdx,postType}, tgt:{name,type} }]
+  parentCatName: 'Etappen',    // configurable parent category name
+  processes: {},                // id -> { name, mappings[], parentCatName }
+  activeProcess: null,          // loaded process id
+  result: null,                 // pipeline output { posts[], categories[] }
+  validation: null,
+  wxr: null,
+};
+
+// ================================================================
+//  UTILS
+// ================================================================
+const $ = id => document.getElementById(id);
+function toast(msg, cls='t-info') {
+  const d = document.createElement('div'); d.className = 'toast ' + cls; d.textContent = msg;
+  $('toasts').appendChild(d); setTimeout(() => d.remove(), 3500);
+}
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function slug(s) { return String(s||'').toLowerCase().replace(/[\u00e4]/g,'ae').replace(/[\u00f6]/g,'oe').replace(/[\u00fc]/g,'ue').replace(/[\u00df]/g,'ss').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''); }
+
+// ================================================================
+//  PROCESS STORAGE
+// ================================================================
+function loadProcs() { try { ST.processes = JSON.parse(localStorage.getItem('mig-procs') || '{}'); } catch(e) { ST.processes = {}; } }
+function saveProcs() { localStorage.setItem('mig-procs', JSON.stringify(ST.processes)); }
+
+function renderProcs() {
+  const g = $('proc-grid'); g.innerHTML = '';
+  for (const [id, p] of Object.entries(ST.processes)) {
+    const d = document.createElement('div');
+    d.className = 'proc' + (id === ST.activeProcess ? ' sel' : '');
+    d.innerHTML = `<div class="p-ico">&#128260;</div><div class="p-name">${esc(p.name)}</div><div class="p-desc">${(p.mappings||[]).length} Zuordnungen</div>`;
+    d.onclick = () => {
+      ST.activeProcess = id;
+      ST.mappings = JSON.parse(JSON.stringify(p.mappings || []));
+      ST.parentCatName = p.parentCatName || 'Etappen';
+      renderProcs();
+      toast('Prozess "' + p.name + '" geladen', 't-ok');
+    };
+    // delete btn
+    const del = document.createElement('button');
+    del.className = 'btn btn-d btn-sm'; del.style.marginTop = '0.5rem'; del.textContent = 'Loeschen';
+    del.onclick = e => { e.stopPropagation(); if(confirm('Prozess loeschen?')){ delete ST.processes[id]; saveProcs(); if(ST.activeProcess===id) ST.activeProcess=null; renderProcs(); }};
+    d.appendChild(del);
+    g.appendChild(d);
+  }
+  if (!Object.keys(ST.processes).length) {
+    g.innerHTML = '<p class="hint" style="grid-column:1/-1">Noch keine Prozesse gespeichert. Erstelle im Mapping-Schritt dein erstes Mapping und speichere es.</p>';
+  }
+}
+
+// ================================================================
+//  XML PARSER
+// ================================================================
+function parseXML(xmlStr) {
+  const doc = new DOMParser().parseFromString(xmlStr, 'application/xml');
+  if (doc.querySelector('parsererror')) throw new Error('XML Parse-Fehler');
+  const nsW = 'http://wordpress.org/export/1.2/', nsC = 'http://purl.org/rss/1.0/modules/content/',
+        nsD = 'http://purl.org/dc/elements/1.1/', nsE = 'http://wordpress.org/export/1.2/excerpt/';
+  const g = (p, t, ns) => { const el = ns ? p.getElementsByTagNameNS(ns, t)[0] : p.getElementsByTagName(t)[0]; return el ? el.textContent : ''; };
+  const items = [];
+  for (const it of doc.getElementsByTagName('item')) {
+    const meta = {};
+    for (const m of it.getElementsByTagNameNS(nsW, 'postmeta')) {
+      const k = g(m,'meta_key',nsW), v = g(m,'meta_value',nsW);
+      if (k) meta[k] = v;
+    }
+    const taxonomies = [];
+    for (const c of it.getElementsByTagName('category')) {
+      taxonomies.push({ taxonomy: c.getAttribute('domain')||'category', slug: c.getAttribute('nicename')||'', term: c.textContent });
+    }
+    items.push({
+      postId: g(it,'post_id',nsW), postType: g(it,'post_type',nsW),
+      title: g(it,'title',null), content: g(it,'encoded',nsC),
+      excerpt: g(it,'encoded',nsE), slug: g(it,'post_name',nsW),
+      date: g(it,'post_date',nsW), dateGmt: g(it,'post_date_gmt',nsW),
+      modified: g(it,'post_modified',nsW), status: g(it,'status',nsW),
+      postParent: g(it,'post_parent',nsW), menuOrder: g(it,'menu_order',nsW),
+      creator: g(it,'creator',nsD), meta, taxonomies,
+    });
+  }
+  return items;
+}
+
+// ================================================================
+//  UPLOAD UI
+// ================================================================
+function renderUpload() {
+  const g = $('upload-grid'); g.innerHTML = '';
+  for (let i = 0; i < ST.slots; i++) {
+    const fd = ST.files[i];
+    const z = document.createElement('div');
+    z.className = 'uz' + (fd ? ' ok' : '');
+    z.innerHTML = `<div class="ico">${fd ? '&#10003;' : '&#128196;'}</div>
+      <div class="lbl">XML-Datei ${i+1}</div>
+      <div class="info">${fd ? '' : 'Klicken oder Datei hierher ziehen'}</div>
+      ${fd ? '<div class="stats">' + fd.items.length + ' Items — ' + esc(fd.name) + '</div>' : ''}`;
+    z.onclick = () => { const inp = document.createElement('input'); inp.type='file'; inp.accept='.xml'; inp.onchange=e=>doUpload(i,e.target.files[0]); inp.click(); };
+    z.ondragover = e => { e.preventDefault(); z.classList.add('over'); };
+    z.ondragleave = () => z.classList.remove('over');
+    z.ondrop = e => { e.preventDefault(); z.classList.remove('over'); if(e.dataTransfer.files.length) doUpload(i,e.dataTransfer.files[0]); };
+    g.appendChild(z);
+  }
+  checkReady();
+}
+function doUpload(idx, file) {
+  if (!file) return;
+  const r = new FileReader();
+  r.onload = e => {
+    try {
+      const items = parseXML(e.target.result);
+      ST.files[idx] = { name: file.name, items };
+      toast(file.name + ': ' + items.length + ' Items geladen', 't-ok');
+      renderUpload();
+    } catch(err) { toast('Fehler: ' + err.message, 't-err'); }
+  };
+  r.readAsText(file);
+}
+function checkReady() {
+  const hasFiles = Object.keys(ST.files).length > 0;
+  $('btn-to-mapping').disabled = !hasFiles;
+}
+
+// ================================================================
+//  KNOWN FIELD DESCRIPTIONS (human-readable)
+// ================================================================
+const HINTS = {
+  // Post types
+  'mpcs-lesson': 'MemberPress Lektionen (Lerninhalte)',
+  'mpcs-course': 'MemberPress Kurse / Sektionen',
+  'memberpressproduct': 'MemberPress Produkte / Mitgliedschaften',
+  'wg_angebot': 'Wegefaehrte Angebote (Start/Business/Enterprise)',
+  'post': 'WordPress Beitraege',
+  'page': 'WordPress Seiten',
+  // Meta keys
+  '_mpcs_lesson_section_id': 'Verknuepft jede Lektion mit ihrer Sektion (ID-Verweis)',
+  '_mpcs_lesson_lesson_order': 'Reihenfolge/Position der Lektion innerhalb der Sektion',
+  '_mpcs_lesson_status': 'Status der Lektion (aktiv/inaktiv)',
+  '_mepr_unauthorized_message_type': 'MemberPress Zugriffs-Einstellung',
+  '_mepr_unauthorized_message': 'Nachricht fuer nicht-autorisierte Nutzer',
+  '_mepr_unauth_login': 'Login-Einstellung fuer gesperrte Inhalte',
+  'wg_stop_title': 'Titel des Etappenstopps',
+  'wg_video_title': 'Titel des Videos',
+  'wg_video_length': 'Laenge des Videos',
+  'wg_spickzettel_title': 'Titel des Spickzettels',
+  'wg_spickzettel_effort': 'Aufwand fuer den Spickzettel',
+  'wg_besenwagen_title': 'Titel der Besenwagen-Aufgabe',
+  'wg_besenwagen_duration': 'Dauer der Besenwagen-Aufgabe',
+  'wg_besenwagen_intro': 'Einleitungstext Besenwagen',
+  'wg_besenwagen_code': 'Code/Shortcode fuer Quiz',
+  'heading_text': 'Ueberschrift des Angebots',
+  'nettopreis': 'Netto-Preis des Angebots',
+  'mehrwertsteuer': 'MwSt-Satz',
+  'endpreis': 'Endpreis inkl. MwSt',
+  'rechnungsstellung': 'Art der Rechnungsstellung',
+  'intervall': 'Zahlungsintervall',
+  'zugang': 'Zugangsart/-dauer',
+  'type': 'Angebotstyp',
+  'zahlungsform': 'Zahlungsform (Abo, Einmal, etc.)',
+  'rollen_slug': 'WordPress-Rolle fuer dieses Angebot',
+  // Taxonomies
+  'mpcs-course-categories': 'Kurs-Kategorien / Etappen-Einteilung',
+  'mpcs-curriculum-categories': 'Curriculum-Kategorien',
+  'mpcs-course-tags': 'Kurs-Tags / Schlagworte',
+  'mepr-product-category': 'Produkt-Kategorien',
+  'category': 'WordPress Kategorien',
+};
+
+// ================================================================
+//  AUTO-DETECT SOURCE STRUCTURE
+// ================================================================
+function detect() {
+  const d = { postTypes: [], metaKeys: [], taxonomies: [], patterns: [] };
+  const pts = new Set(), mks = new Set(), txs = new Set();
+  // Collect sample data
+  const ptSamples = {};   // postType -> [titles]
+  const mkSamples = {};   // metaKey|postType -> [values]
+  const txSamples = {};   // taxonomy -> [terms]
+
+  for (const [idx, fd] of Object.entries(ST.files)) {
+    for (const item of fd.items) {
+      if (item.postType && item.postType !== 'attachment') {
+        pts.add(item.postType + '|' + idx);
+        const pk = item.postType;
+        if (!ptSamples[pk]) ptSamples[pk] = [];
+        if (ptSamples[pk].length < 3 && item.title) ptSamples[pk].push(item.title);
+      }
+      for (const k of Object.keys(item.meta)) {
+        if (!/^_(yoast|edit_|wp_|generate|thumbnail|dp_|wxr)/.test(k)) {
+          mks.add(k + '|' + idx + '|' + item.postType);
+          const sk = k + '|' + item.postType;
+          if (!mkSamples[sk]) mkSamples[sk] = [];
+          const v = item.meta[k];
+          if (mkSamples[sk].length < 3 && v && !mkSamples[sk].includes(v)) mkSamples[sk].push(v);
+        }
+      }
+      for (const t of item.taxonomies) {
+        txs.add(t.taxonomy + '|' + idx);
+        if (!txSamples[t.taxonomy]) txSamples[t.taxonomy] = [];
+        if (txSamples[t.taxonomy].length < 4 && t.term && !txSamples[t.taxonomy].includes(t.term)) {
+          txSamples[t.taxonomy].push(t.term);
+        }
+      }
+      if (item.content && /\[chained-quiz\s+\d+\]/.test(item.content)) {
+        const m = item.content.match(/\[chained-quiz\s+\d+\]/);
+        if (!d.patterns.some(p => p.name === '[chained-quiz]')) {
+          d.patterns.push({ name: '[chained-quiz]', example: m[0], fileIdx: idx, type: 'shortcode',
+            hint: 'Shortcode fuer Quiz-Aufgabe im Inhalt gefunden' });
+        }
+      }
+    }
+  }
+
+  for (const e of pts) {
+    const [pt, fi] = e.split('|');
+    const cnt = ST.files[fi]?.items.filter(i => i.postType === pt).length || 0;
+    d.postTypes.push({ name: pt, fileIdx: fi, count: cnt,
+      hint: HINTS[pt] || '', samples: ptSamples[pt] || [] });
+  }
+  for (const e of mks) {
+    const [key, fi, pt] = e.split('|');
+    d.metaKeys.push({ name: key, fileIdx: fi, postType: pt,
+      hint: HINTS[key] || '', samples: mkSamples[key + '|' + pt] || [] });
+  }
+  for (const e of txs) {
+    const [tax, fi] = e.split('|');
+    if (!d.taxonomies.some(t => t.name === tax)) {
+      const terms = new Set();
+      ST.files[fi]?.items.forEach(item => item.taxonomies.filter(t => t.taxonomy === tax).forEach(t => terms.add(t.term)));
+      d.taxonomies.push({ name: tax, fileIdx: fi, termCount: terms.size,
+        hint: HINTS[tax] || '', samples: txSamples[tax] || [] });
+    }
+  }
+
+  ST.detected = d;
+  return d;
+}
+
+// ================================================================
+//  WORDPRESS TARGET SCHEMA
+// ================================================================
+const WP_TARGETS = [
+  { group: 'Post-Types', items: [
+    { name: 'post', type: 'post_type', desc: 'Beitrag (Lesson/Etappenstopp)' },
+    { name: 'page', type: 'post_type', desc: 'Seite' },
+    { name: 'wg_angebot', type: 'post_type', desc: 'Angebot (Produkt)' },
+  ]},
+  { group: 'Kategorie-Hierarchie', items: [
+    { name: 'parent_category', type: 'category', desc: 'Oberkategorie', hasInput: true, inputKey: 'parentCatName', placeholder: 'z.B. Etappen' },
+    { name: 'child_category', type: 'category', desc: 'Unterkategorie (z.B. E01, E02...)' },
+  ]},
+  { group: 'Felder', items: [
+    { name: 'menu_order', type: 'field', desc: 'Reihenfolge / Sortierung' },
+  ]},
+  { group: 'Verknuepfungen', items: [
+    { name: 'section_join', type: 'join', desc: 'Lektion → Sektion (fuer Kategorie-Zuordnung)' },
+  ]},
+  { group: 'Content-Extraktion', items: [
+    { name: 'extract_chained_quiz', type: 'extract', desc: '[chained-quiz X] → Meta + aus Inhalt entfernen' },
+  ]},
+];
+
+// ================================================================
+//  DRAG & DROP MAPPING
+// ================================================================
+let _drag = null; // current drag data
+
+function renderDnD() {
+  const d = ST.detected;
+  if (!d) return;
+  const srcEl = $('src-body'), tgtEl = $('tgt-body');
+
+  // Helper: truncate sample values
+  const samp = (arr, max=40) => arr.map(s => s.length > max ? s.substring(0,max)+'...' : s);
+
+  // === SOURCE COLUMN ===
+  let sh = '';
+
+  // Post types
+  if (d.postTypes.length) {
+    sh += '<div class="grp"><div class="grp-title">Post-Types — Was sind das fuer Inhalte?</div>';
+    for (const pt of d.postTypes) {
+      const used = ST.mappings.some(m => m.src.type === 'post_type' && m.src.name === pt.name);
+      const hint = pt.hint ? `<span class="desc">${esc(pt.hint)}</span>` : '';
+      const preview = pt.samples.length ? `<span class="preview">z.B. "${samp(pt.samples).map(esc).join('", "')}"</span>` : '';
+      sh += `<div class="src-item${used?' used':''}" draggable="${!used}" data-t="post_type" data-n="${esc(pt.name)}" data-f="${esc(pt.fileIdx)}">
+        <div class="row1"><span class="tag">type</span><span class="nm">${esc(pt.name)}</span><span class="cnt">${pt.count} Stueck</span></div>
+        ${hint}${preview}
+      </div>`;
+    }
+    sh += '</div>';
+  }
+
+  // Taxonomies
+  if (d.taxonomies.length) {
+    sh += '<div class="grp"><div class="grp-title">Taxonomien — Wie sind die Inhalte gruppiert?</div>';
+    for (const tx of d.taxonomies) {
+      const used = ST.mappings.some(m => m.src.type === 'taxonomy' && m.src.name === tx.name);
+      const hint = tx.hint ? `<span class="desc">${esc(tx.hint)}</span>` : '';
+      const preview = tx.samples.length ? `<span class="preview">Begriffe: ${samp(tx.samples).map(esc).join(', ')}${tx.termCount > tx.samples.length ? ', ...' : ''}</span>` : '';
+      sh += `<div class="src-item${used?' used':''}" draggable="${!used}" data-t="taxonomy" data-n="${esc(tx.name)}" data-f="${esc(tx.fileIdx)}">
+        <div class="row1"><span class="tag">tax</span><span class="nm">${esc(tx.name)}</span><span class="cnt">${tx.termCount} Terme</span></div>
+        ${hint}${preview}
+      </div>`;
+    }
+    sh += '</div>';
+  }
+
+  // Meta keys grouped by post type
+  const mbp = {};
+  for (const mk of d.metaKeys) {
+    if (!mbp[mk.postType]) mbp[mk.postType] = [];
+    if (!mbp[mk.postType].some(m => m.name === mk.name)) mbp[mk.postType].push(mk);
+  }
+  for (const [pt, mks] of Object.entries(mbp)) {
+    const ptHint = HINTS[pt] ? ' — ' + HINTS[pt] : '';
+    sh += `<div class="grp"><div class="grp-title">Zusatzfelder von: ${esc(pt)}${esc(ptHint)}</div>`;
+    for (const mk of mks) {
+      const used = ST.mappings.some(m => m.src.type === 'meta' && m.src.name === mk.name && m.src.postType === pt);
+      const hint = mk.hint ? `<span class="desc">${esc(mk.hint)}</span>` : '';
+      const preview = mk.samples.length ? `<span class="preview">Werte: ${samp(mk.samples, 30).map(esc).join(', ')}</span>` : '';
+      sh += `<div class="src-item${used?' used':''}" draggable="${!used}" data-t="meta" data-n="${esc(mk.name)}" data-f="${esc(mk.fileIdx)}" data-pt="${esc(pt)}">
+        <div class="row1"><span class="tag">meta</span><span class="nm">${esc(mk.name)}</span></div>
+        ${hint}${preview}
+      </div>`;
+    }
+    sh += '</div>';
+  }
+
+  // Content patterns
+  if (d.patterns.length) {
+    sh += '<div class="grp"><div class="grp-title">Im Inhalt gefundene Muster</div>';
+    for (const cp of d.patterns) {
+      const used = ST.mappings.some(m => m.src.type === 'pattern' && m.src.name === cp.name);
+      const hint = cp.hint ? `<span class="desc">${esc(cp.hint)}</span>` : '';
+      sh += `<div class="src-item${used?' used':''}" draggable="${!used}" data-t="pattern" data-n="${esc(cp.name)}" data-f="${esc(cp.fileIdx)}">
+        <div class="row1"><span class="tag">muster</span><span class="nm">${esc(cp.example)}</span></div>
+        ${hint}
+      </div>`;
+    }
+    sh += '</div>';
+  }
+  srcEl.innerHTML = sh;
+
+  // === TARGET COLUMN ===
+  let th = '';
+  for (const grp of WP_TARGETS) {
+    th += `<div class="grp"><div class="grp-title">${esc(grp.group)}</div>`;
+    for (const it of grp.items) {
+      const mp = ST.mappings.find(m => m.tgt.name === it.name);
+      let extra = '';
+      if (it.hasInput) {
+        extra = `<input class="t-input" type="text" value="${esc(ST[it.inputKey] || '')}" placeholder="${esc(it.placeholder)}" data-key="${it.inputKey}">`;
+      }
+      th += `<div class="tgt-slot${mp?' filled':''}" data-tn="${esc(it.name)}" data-tt="${esc(it.type)}">
+        <span class="t-tag">${esc(it.type)}</span>
+        <span class="t-label">${esc(it.desc)}</span>
+        ${extra}
+        ${mp ? `<span class="mapped">${esc(mp.src.name)} <span class="x" data-rm="${esc(it.name)}">&times;</span></span>` : ''}
+      </div>`;
+    }
+    th += '</div>';
+  }
+  tgtEl.innerHTML = th;
+
+  // === ATTACH EVENTS ===
+  // Drag from source
+  srcEl.querySelectorAll('.src-item:not(.used)').forEach(el => {
+    el.addEventListener('dragstart', e => {
+      _drag = { type: el.dataset.t, name: el.dataset.n, fileIdx: el.dataset.f, postType: el.dataset.pt || '' };
+      el.style.opacity = '0.4';
+      e.dataTransfer.effectAllowed = 'link';
+    });
+    el.addEventListener('dragend', () => { el.style.opacity = ''; _drag = null; });
+  });
+
+  // Drop on target
+  tgtEl.querySelectorAll('.tgt-slot').forEach(el => {
+    el.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'link'; el.classList.add('drag-hover'); });
+    el.addEventListener('dragleave', () => el.classList.remove('drag-hover'));
+    el.addEventListener('drop', e => {
+      e.preventDefault(); el.classList.remove('drag-hover');
+      if (!_drag) return;
+      const tn = el.dataset.tn, tt = el.dataset.tt;
+      // Remove any existing mapping for this target
+      ST.mappings = ST.mappings.filter(m => m.tgt.name !== tn);
+      ST.mappings.push({ src: { ..._drag }, tgt: { name: tn, type: tt } });
+      _drag = null;
+      renderDnD();
+      renderPairs();
+      toast(_drag ? '' : 'Zuordnung erstellt', 't-ok');
+    });
+  });
+
+  // Unmap buttons
+  tgtEl.querySelectorAll('[data-rm]').forEach(el => {
+    el.onclick = e => {
+      e.stopPropagation();
+      ST.mappings = ST.mappings.filter(m => m.tgt.name !== el.dataset.rm);
+      renderDnD(); renderPairs();
+    };
+  });
+
+  // Inline config inputs (e.g., parent category name)
+  tgtEl.querySelectorAll('.t-input').forEach(el => {
+    el.onclick = e => e.stopPropagation(); // prevent drag events
+    el.oninput = () => { ST[el.dataset.key] = el.value.trim() || el.placeholder; };
+  });
+}
+
+function renderPairs() {
+  const c = $('pairs-list');
+  $('pair-count').textContent = ST.mappings.length;
+  if (!ST.mappings.length) {
+    c.innerHTML = '<p class="hint">Noch keine Zuordnungen. Ziehe Quell-Felder (orange) auf die WordPress-Ziele (gruen).</p>';
+    return;
+  }
+  c.innerHTML = ST.mappings.map(m =>
+    `<div class="pair">
+      <span class="p-s">${esc(m.src.name)}</span>
+      <span class="p-a">&rarr;</span>
+      <span class="p-t">${esc(m.tgt.name)}</span>
+      <span class="p-x" data-rm2="${esc(m.tgt.name)}">&times;</span>
+    </div>`
+  ).join('');
+  c.querySelectorAll('[data-rm2]').forEach(el => {
+    el.onclick = () => { ST.mappings = ST.mappings.filter(m => m.tgt.name !== el.dataset.rm2); renderDnD(); renderPairs(); };
+  });
+}
+
+// ================================================================
+//  TRANSFORMATION PIPELINE
+// ================================================================
+function runPipeline() {
+  const mappings = ST.mappings;
+
+  // Index all items
+  const allItems = [];
+  const byId = {};
+  for (const [idx, fd] of Object.entries(ST.files)) {
+    for (const item of fd.items) {
+      const it = { ...item, _fi: idx };
+      allItems.push(it);
+      byId[item.postId] = it;
+    }
+  }
+
+  const ptMaps = mappings.filter(m => m.tgt.type === 'post_type');
+  const catMap = mappings.find(m => m.tgt.name === 'child_category');
+  const joinMap = mappings.find(m => m.tgt.name === 'section_join');
+  const extractMap = mappings.find(m => m.tgt.name === 'extract_chained_quiz');
+
+  // === BUILD CATEGORIES ===
+  const cats = [];
+  let catId = 100001;
+
+  // Parent category
+  let parentCat = null;
+  if (catMap) {
+    const pName = ST.parentCatName || 'Etappen';
+    parentCat = { termId: catId++, name: pName, slug: slug(pName), parentSlug: '' };
+    cats.push(parentCat);
+  }
+
+  // Child categories
+  if (catMap) {
+    const src = catMap.src;
+    if (src.type === 'post_type') {
+      // Post titles become category names
+      const items = allItems.filter(i => i.postType === src.name);
+      for (const it of items) {
+        cats.push({ termId: catId++, name: it.title, slug: it.slug || slug(it.title), parentSlug: parentCat?.slug || '', _srcId: it.postId });
+      }
+    } else if (src.type === 'taxonomy') {
+      // Taxonomy terms become categories
+      const seen = new Set();
+      for (const it of allItems) {
+        for (const tx of it.taxonomies) {
+          if (tx.taxonomy === src.name && !seen.has(tx.slug)) {
+            seen.add(tx.slug);
+            cats.push({ termId: catId++, name: tx.term, slug: tx.slug, parentSlug: parentCat?.slug || '', _taxSlug: tx.slug });
+          }
+        }
+      }
+    }
+  }
+
+  // === TRANSFORM POSTS ===
+  const posts = [];
+  let pid = 200001;
+
+  for (const ptm of ptMaps) {
+    const srcPT = ptm.src.name;
+    const tgtPT = ptm.tgt.name;
+    const srcItems = allItems.filter(i => i.postType === srcPT);
+
+    for (const item of srcItems) {
+      const post = {
+        postId: pid++,
+        title: item.title,
+        content: item.content || '',
+        slug: item.slug || slug(item.title),
+        date: item.date, dateGmt: item.dateGmt, modified: item.modified,
+        status: item.status || 'publish',
+        postType: tgtPT,
+        menuOrder: parseInt(item.menuOrder, 10) || 0,
+        meta: {},
+        categories: [],
+        _srcId: item.postId,
+      };
+
+      // Apply meta → meta and meta → field mappings
+      for (const mm of mappings) {
+        if (mm.src.type !== 'meta') continue;
+        if (mm.src.postType && mm.src.postType !== srcPT) continue;
+        const val = item.meta[mm.src.name];
+        if (val === undefined) continue;
+
+        if (mm.tgt.type === 'meta') {
+          post.meta[mm.tgt.name] = val;
+        } else if (mm.tgt.type === 'field') {
+          if (mm.tgt.name === 'menu_order') post.menuOrder = parseInt(val, 10) || 0;
+          else if (mm.tgt.name === 'title') post.title = val;
+          else if (mm.tgt.name === 'slug') post.slug = val;
+        }
+      }
+
+      // Extract [chained-quiz] → meta + strip
+      if (extractMap && extractMap.src.fileIdx === item._fi) {
+        const m = post.content.match(/\[chained-quiz\s+\d+\]/);
+        if (m) {
+          post.meta.wg_besenwagen_code = m[0];
+          post.content = post.content.replace(/\[chained-quiz[^\]]*\]/g, '').trim();
+        }
+      }
+
+      // Resolve section join → category
+      if (joinMap && joinMap.src.type === 'meta') {
+        const secId = item.meta[joinMap.src.name];
+        if (secId) {
+          let mc = cats.find(c => c._srcId === secId);
+          if (!mc) {
+            const secItem = byId[secId];
+            if (secItem) {
+              mc = cats.find(c => c.slug === secItem.slug || c.name === secItem.title);
+              if (!mc) {
+                for (const tx of secItem.taxonomies) {
+                  mc = cats.find(c => c._taxSlug === tx.slug);
+                  if (mc) break;
+                }
+              }
+            }
+          }
+          if (mc) {
+            post.categories.push({ name: mc.name, slug: mc.slug });
+            if (mc.parentSlug) {
+              const pc = cats.find(c => c.slug === mc.parentSlug);
+              if (pc) post.categories.push({ name: pc.name, slug: pc.slug });
+            }
+          } else {
+            post._unresolved = secId;
+          }
+        }
+      }
+
+      // Copy existing taxonomies
+      for (const tx of item.taxonomies) {
+        if (tx.taxonomy === 'category' && !post.categories.some(c => c.slug === tx.slug)) {
+          post.categories.push({ name: tx.term, slug: tx.slug });
+        }
+      }
+
+      // Passthrough non-internal meta
+      for (const [k, v] of Object.entries(item.meta)) {
+        if (!k.startsWith('_') && v && !post.meta[k]) {
+          post.meta[k] = v;
+        }
+      }
+
+      posts.push(post);
+    }
+  }
+
+  ST.result = { posts, cats };
+
+  // === VALIDATE ===
+  const errs = [];
+  const unres = posts.filter(p => p._unresolved);
+  if (unres.length) {
+    errs.push({ sev: 'warn', msg: unres.length + ' Lektionen ohne aufgeloeste Sektion', det: 'IDs: ' + [...new Set(unres.map(p => p._unresolved))].join(', ') });
+  }
+  const noCat = posts.filter(p => joinMap && p.categories.length === 0 && ptMaps.some(m => m.tgt.name === p.postType));
+  if (noCat.length) {
+    for (const p of noCat) errs.push({ sev: 'warn', msg: '"' + p.title + '" hat keine Kategorie', det: 'Section-ID: ' + (p._unresolved || 'keine') });
+  }
+  const slugCheck = {};
+  for (const p of posts) {
+    const k = p.postType + ':' + p.slug;
+    if (slugCheck[k]) errs.push({ sev: 'fail', msg: 'Doppelter Slug: "' + p.slug + '" (' + p.postType + ')', det: '' });
+    else slugCheck[k] = true;
+  }
+  if (cats.length) errs.push({ sev: 'pass', msg: cats.length + ' Kategorien erstellt', det: '' });
+  if (posts.length) errs.push({ sev: 'pass', msg: posts.length + ' Posts transformiert', det: '' });
+  errs.sort((a, b) => ({fail:0,warn:1,pass:2}[a.sev]||0) - ({fail:0,warn:1,pass:2}[b.sev]||0));
+  ST.validation = { errs, pass: errs.filter(e=>e.sev==='pass').length, warn: errs.filter(e=>e.sev==='warn').length, fail: errs.filter(e=>e.sev==='fail').length };
+}
+
+// ================================================================
+//  WXR GENERATOR
+// ================================================================
+function genWXR() {
+  const { posts, cats } = ST.result;
+  const url = $('exp-url').value || 'https://example.com';
+  const author = $('exp-author').value || 'admin';
+
+  let x = `<?xml version="1.0" encoding="UTF-8" ?>
+<!-- Generated by LMS-to-WordPress Migration Tool -->
+<rss version="2.0"
+\txmlns:excerpt="http://wordpress.org/export/1.2/excerpt/"
+\txmlns:content="http://purl.org/rss/1.0/modules/content/"
+\txmlns:wfw="http://wellformedweb.org/CommentAPI/"
+\txmlns:dc="http://purl.org/dc/elements/1.1/"
+\txmlns:wp="http://wordpress.org/export/1.2/"
+>
+<channel>
+\t<title>Migration</title>
+\t<link>${esc(url)}</link>
+\t<description></description>
+\t<language>de</language>
+\t<wp:wxr_version>1.2</wp:wxr_version>
+\t<wp:base_site_url>${esc(url)}</wp:base_site_url>
+\t<wp:base_blog_url>${esc(url)}</wp:base_blog_url>
+\t<wp:author>
+\t\t<wp:author_login><![CDATA[${author}]]></wp:author_login>
+\t\t<wp:author_email><![CDATA[${author}@example.com]]></wp:author_email>
+\t\t<wp:author_display_name><![CDATA[${author}]]></wp:author_display_name>
+\t</wp:author>\n`;
+
+  for (const c of cats) {
+    x += `\t<wp:category>
+\t\t<wp:term_id>${c.termId}</wp:term_id>
+\t\t<wp:category_nicename><![CDATA[${c.slug}]]></wp:category_nicename>
+\t\t<wp:category_parent><![CDATA[${c.parentSlug||''}]]></wp:category_parent>
+\t\t<wp:cat_name><![CDATA[${c.name}]]></wp:cat_name>
+\t</wp:category>\n`;
+  }
+
+  for (const p of posts) {
+    const d = p.date || '2024-01-01 00:00:00';
+    const dg = p.dateGmt || d;
+    let pub; try { pub = new Date(d.replace(' ','T')+'Z').toUTCString(); } catch(e) { pub = 'Mon, 01 Jan 2024 00:00:00 +0000'; }
+
+    x += `\t<item>
+\t\t<title><![CDATA[${p.title}]]></title>
+\t\t<link>${esc(url)}/?p=${p.postId}</link>
+\t\t<pubDate>${pub}</pubDate>
+\t\t<dc:creator><![CDATA[${author}]]></dc:creator>
+\t\t<guid isPermaLink="false">${esc(url)}/?p=${p.postId}</guid>
+\t\t<description></description>
+\t\t<content:encoded><![CDATA[${p.content}]]></content:encoded>
+\t\t<excerpt:encoded><![CDATA[]]></excerpt:encoded>
+\t\t<wp:post_id>${p.postId}</wp:post_id>
+\t\t<wp:post_date><![CDATA[${d}]]></wp:post_date>
+\t\t<wp:post_date_gmt><![CDATA[${dg}]]></wp:post_date_gmt>
+\t\t<wp:post_modified><![CDATA[${p.modified||d}]]></wp:post_modified>
+\t\t<wp:post_modified_gmt><![CDATA[${p.modified||dg}]]></wp:post_modified_gmt>
+\t\t<wp:comment_status><![CDATA[closed]]></wp:comment_status>
+\t\t<wp:ping_status><![CDATA[closed]]></wp:ping_status>
+\t\t<wp:post_name><![CDATA[${p.slug}]]></wp:post_name>
+\t\t<wp:status><![CDATA[${p.status}]]></wp:status>
+\t\t<wp:post_parent>0</wp:post_parent>
+\t\t<wp:menu_order>${p.menuOrder}</wp:menu_order>
+\t\t<wp:post_type><![CDATA[${p.postType}]]></wp:post_type>
+\t\t<wp:post_password><![CDATA[]]></wp:post_password>
+\t\t<wp:is_sticky>0</wp:is_sticky>\n`;
+
+    for (const c of p.categories) {
+      x += `\t\t<category domain="category" nicename="${esc(c.slug)}"><![CDATA[${c.name}]]></category>\n`;
+    }
+    for (const [k, v] of Object.entries(p.meta)) {
+      if (v == null) continue;
+      x += `\t\t<wp:postmeta>
+\t\t\t<wp:meta_key><![CDATA[${k}]]></wp:meta_key>
+\t\t\t<wp:meta_value><![CDATA[${v}]]></wp:meta_value>
+\t\t</wp:postmeta>\n`;
+    }
+    x += '\t</item>\n';
+  }
+  x += '</channel>\n</rss>';
+  return x;
+}
+
+// ================================================================
+//  RENDER: PREVIEW
+// ================================================================
+function renderPreview() {
+  if (!ST.result) return;
+  const { posts, cats } = ST.result;
+  const { errs, pass, warn, fail } = ST.validation;
+  const tabsEl = $('pv-tabs'), panelsEl = $('pv-panels');
+  tabsEl.innerHTML = ''; panelsEl.innerHTML = '';
+
+  // Validation bar
+  $('v-bar').innerHTML = `
+    <span class="v-badge" style="background:var(--green2);color:var(--green);">${pass} OK</span>
+    <span class="v-badge" style="background:var(--yellow2);color:var(--yellow);">${warn} Warnungen</span>
+    <span class="v-badge" style="background:var(--red2);color:var(--red);">${fail} Fehler</span>`;
+
+  // Tabs
+  const tabs = [{ id: 'cats', label: 'Kategorien (' + cats.length + ')' }];
+  const byType = {};
+  for (const p of posts) { (byType[p.postType] = byType[p.postType] || []).push(p); }
+  for (const [pt, items] of Object.entries(byType)) tabs.push({ id: 'pt-' + pt, label: pt + ' (' + items.length + ')' });
+
+  tabs.forEach((t, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'tab' + (i === 0 ? ' on' : '');
+    btn.textContent = t.label;
+    btn.onclick = () => {
+      tabsEl.querySelectorAll('.tab').forEach(b => b.classList.remove('on'));
+      btn.classList.add('on');
+      panelsEl.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('on'));
+      document.getElementById('tp-' + t.id)?.classList.add('on');
+    };
+    tabsEl.appendChild(btn);
+  });
+
+  // Category tree
+  let ch = '<div>';
+  const parents = cats.filter(c => !c.parentSlug);
+  for (const p of parents) {
+    ch += `<div class="tree-node tree-root"><strong>${esc(p.name)}</strong> <span class="badge b-p">Parent</span></div>`;
+    for (const c of cats.filter(c => c.parentSlug === p.slug)) {
+      const cnt = posts.filter(po => po.categories.some(ca => ca.slug === c.slug)).length;
+      ch += `<div class="tree-node">${esc(c.name)} <span class="badge b-c">Child</span> <span class="badge b-n">${cnt} Posts</span></div>`;
+    }
+  }
+  ch += '</div>';
+  const cp = document.createElement('div'); cp.className = 'tab-panel on'; cp.id = 'tp-cats'; cp.innerHTML = ch;
+  panelsEl.appendChild(cp);
+
+  // Post tables
+  for (const [pt, items] of Object.entries(byType)) {
+    let h = '<table><thead><tr><th>Titel</th><th>Slug</th><th>Kategorien</th><th>Order</th><th>Meta</th></tr></thead><tbody>';
+    for (const p of items) {
+      h += `<tr><td>${esc(p.title)}</td><td style="color:var(--text3)">${esc(p.slug)}</td>
+        <td>${p.categories.map(c => esc(c.name)).join(', ') || '<span style="color:var(--red)">—</span>'}</td>
+        <td>${p.menuOrder}</td><td style="color:var(--text3);font-size:0.72rem">${Object.keys(p.meta).filter(k => p.meta[k]).join(', ') || '—'}</td></tr>`;
+    }
+    h += '</tbody></table>';
+    const tp = document.createElement('div'); tp.className = 'tab-panel'; tp.id = 'tp-pt-' + pt; tp.innerHTML = h;
+    panelsEl.appendChild(tp);
+  }
+
+  // Validation list
+  $('v-list').innerHTML = errs.map(e =>
+    `<div class="v-item">
+      <span class="v-ico ${{pass:'v-ok',warn:'v-warn',fail:'v-err'}[e.sev]}">${{pass:'&#10003;',warn:'&#9888;',fail:'&#10007;'}[e.sev]}</span>
+      <div class="v-msg">${esc(e.msg)}${e.det ? '<small>'+esc(e.det)+'</small>' : ''}</div>
+    </div>`
+  ).join('');
+}
+
+function renderExport() {
+  if (!ST.result) return;
+  const { posts, cats } = ST.result;
+  const byType = {};
+  for (const p of posts) byType[p.postType] = (byType[p.postType] || 0) + 1;
+  let h = `<div class="stat"><div class="num">${cats.length}</div><div class="lbl">Kategorien</div></div>`;
+  for (const [pt, c] of Object.entries(byType)) h += `<div class="stat"><div class="num">${c}</div><div class="lbl">${esc(pt)}</div></div>`;
+  h += `<div class="stat"><div class="num">${posts.length}</div><div class="lbl">Gesamt</div></div>`;
+  $('exp-stats').innerHTML = h;
+}
+
+// ================================================================
+//  NAVIGATION
+// ================================================================
+function goTo(step) {
+  if (step < 0 || step > 3) return;
+  if (step >= 2) {
+    try { runPipeline(); } catch(e) { toast('Pipeline-Fehler: ' + e.message, 't-err'); console.error(e); return; }
+  }
+  ST.step = step;
+  document.querySelectorAll('.step-btn').forEach((b, i) => {
+    b.classList.toggle('active', i === step);
+    b.classList.toggle('done', i < step);
+  });
+  document.querySelectorAll('.panel').forEach((p, i) => p.classList.toggle('show', i === step));
+
+  if (step === 0) { renderUpload(); renderProcs(); }
+  if (step === 1) { detect(); renderDnD(); renderPairs(); }
+  if (step === 2) renderPreview();
+  if (step === 3) renderExport();
+}
+
+// ================================================================
+//  INIT
+// ================================================================
+function init() {
+  loadProcs();
+  renderUpload();
+  renderProcs();
+
+  // Stepper click
+  document.querySelectorAll('.step-btn').forEach(b => b.onclick = () => goTo(parseInt(b.dataset.s)));
+
+  // Navigation buttons
+  $('btn-to-mapping').onclick = () => goTo(1);
+  $('btn-to-preview').onclick = () => goTo(2);
+  $('btn-to-export').onclick = () => goTo(3);
+  $('btn-back-1').onclick = () => goTo(0);
+  $('btn-back-2').onclick = () => goTo(1);
+  $('btn-back-3').onclick = () => goTo(2);
+
+  // Upload slot controls
+  $('btn-add-slot').onclick = () => { ST.slots++; renderUpload(); };
+  $('btn-rm-slot').onclick = () => { if (ST.slots > 1) { delete ST.files[ST.slots - 1]; ST.slots--; renderUpload(); } };
+
+  // Save process
+  $('btn-save-proc').onclick = () => {
+    const name = $('proc-name').value.trim();
+    if (!name) { toast('Bitte Prozess-Name eingeben', 't-err'); return; }
+    const id = name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    ST.processes[id] = { name, mappings: JSON.parse(JSON.stringify(ST.mappings)), parentCatName: ST.parentCatName };
+    ST.activeProcess = id;
+    saveProcs();
+    toast('Prozess "' + name + '" gespeichert!', 't-ok');
+  };
+
+  // Clear mappings
+  $('btn-clear-map').onclick = () => { ST.mappings = []; renderDnD(); renderPairs(); };
+
+  // Generate WXR
+  $('btn-gen').onclick = () => {
+    if (!ST.result) { toast('Erst Vorschau pruefen', 't-err'); return; }
+    try {
+      ST.wxr = genWXR();
+      $('xml-box').style.display = 'block';
+      $('xml-box').textContent = ST.wxr.substring(0, 5000) + (ST.wxr.length > 5000 ? '\n...(gekuerzt)...' : '');
+      $('btn-dl').disabled = false;
+      toast('WXR generiert (' + Math.round(ST.wxr.length / 1024) + ' KB)', 't-ok');
+    } catch(e) { toast('Fehler: ' + e.message, 't-err'); console.error(e); }
+  };
+
+  // Download WXR
+  $('btn-dl').onclick = () => {
+    if (!ST.wxr) return;
+    const blob = new Blob([ST.wxr], { type: 'application/xml' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url;
+    a.download = 'migration-' + slug($('proc-name').value || 'export') + '-' + new Date().toISOString().slice(0, 10) + '.xml';
+    a.click(); URL.revokeObjectURL(url);
+  };
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

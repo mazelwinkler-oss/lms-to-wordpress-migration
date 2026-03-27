@@ -1,0 +1,127 @@
+{
+  "id": "memberpress-default",
+  "name": "MemberPress \u2192 WordPress",
+  "version": 1,
+  "created": "2026-03-27T10:00:00Z",
+  "modified": "2026-03-27T10:00:00Z",
+  "sourceFiles": [
+    {
+      "id": "lessons",
+      "label": "Lessons XML",
+      "description": "MemberPress Course Lessons (mpcs-lesson)",
+      "expectedPostType": "mpcs-lesson"
+    },
+    {
+      "id": "sections",
+      "label": "Sections XML",
+      "description": "MemberPress Kurse/Sektionen (mpcs-course)",
+      "expectedPostType": "mpcs-course"
+    },
+    {
+      "id": "products",
+      "label": "Online-Angebote XML",
+      "description": "MemberPress Products (memberpressproduct)",
+      "expectedPostType": "memberpressproduct"
+    }
+  ],
+  "postTypeMappings": [
+    {
+      "id": "ptm-1",
+      "sourcePostType": "mpcs-lesson",
+      "sourceFileId": "lessons",
+      "targetPostType": "post",
+      "targetStatus": "publish",
+      "isCategorySource": false,
+      "categoryConfig": null,
+      "fieldMappings": [
+        { "source": "title", "target": "title", "transform": "" },
+        { "source": "content:encoded", "target": "content:encoded", "transform": "stripShortcodes" },
+        { "source": "post_name", "target": "post_name", "transform": "" },
+        { "source": "post_date", "target": "post_date", "transform": "" }
+      ],
+      "metaMappings": [
+        {
+          "source": "_mpcs_lesson_lesson_order",
+          "target": "menu_order",
+          "targetLocation": "field",
+          "transform": "toInteger"
+        },
+        {
+          "source": "__extract_from_content__",
+          "target": "wg_besenwagen_code",
+          "targetLocation": "meta",
+          "transform": "extractChainedQuiz"
+        }
+      ],
+      "joinRules": [
+        {
+          "sourceMetaKey": "_mpcs_lesson_section_id",
+          "joinToFileId": "sections",
+          "joinField": "post_id",
+          "purpose": "categoryAssignment"
+        }
+      ]
+    },
+    {
+      "id": "ptm-2",
+      "sourcePostType": "mpcs-course",
+      "sourceFileId": "sections",
+      "targetPostType": "_category",
+      "targetStatus": "",
+      "isCategorySource": true,
+      "categoryConfig": {
+        "parentCategory": {
+          "name": "Etappen",
+          "slug": "etappen"
+        },
+        "childNameSource": "title",
+        "childSlugSource": "post_name",
+        "taxonomySource": "mpcs-course-categories"
+      },
+      "fieldMappings": [],
+      "metaMappings": [],
+      "joinRules": []
+    },
+    {
+      "id": "ptm-3",
+      "sourcePostType": "wg_angebot",
+      "sourceFileId": "products",
+      "targetPostType": "wg_angebot",
+      "targetStatus": "publish",
+      "isCategorySource": false,
+      "categoryConfig": null,
+      "fieldMappings": [
+        { "source": "title", "target": "title", "transform": "" },
+        { "source": "content:encoded", "target": "content:encoded", "transform": "" },
+        { "source": "post_name", "target": "post_name", "transform": "" },
+        { "source": "post_date", "target": "post_date", "transform": "" }
+      ],
+      "metaMappings": [],
+      "joinRules": []
+    }
+  ],
+  "transforms": {
+    "stripShortcodes": {
+      "type": "regex_remove",
+      "pattern": "\\[chained-quiz[^\\]]*\\]"
+    },
+    "extractChainedQuiz": {
+      "type": "regex_extract",
+      "pattern": "\\[chained-quiz\\s+\\d+\\]"
+    },
+    "toInteger": {
+      "type": "cast",
+      "castTo": "int"
+    },
+    "toFloat": {
+      "type": "cast",
+      "castTo": "float"
+    }
+  },
+  "wxrConfig": {
+    "siteUrl": "https://example.com",
+    "blogTitle": "Linkado",
+    "defaultAuthor": "admin",
+    "defaultAuthorEmail": "admin@example.com"
+  }
+}
