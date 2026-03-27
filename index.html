@@ -98,6 +98,11 @@ header p { color: var(--text2); font-size: 0.82rem; }
 .mapping-guide .arrow { color: var(--green); font-weight: 700; }
 .mapping-guide ul { margin: 0.3rem 0 0 1.2rem; }
 .mapping-guide li { margin-bottom: 0.15rem; }
+.add-field-row { display: flex; gap: 0.4rem; margin-top: 0.4rem; align-items: center; }
+.add-field-row input { flex: 1; padding: 0.3rem 0.5rem; font-size: 0.78rem; }
+.add-field-row button { flex-shrink: 0; }
+.passthrough-note { background: var(--bg3); border-left: 3px solid var(--green); border-radius: 0 var(--radius) var(--radius) 0; padding: 0.6rem 0.8rem; margin-top: 0.5rem; font-size: 0.75rem; color: var(--text2); line-height: 1.5; }
+.passthrough-note strong { color: var(--green); }
 
 /* Drop targets */
 .tgt-slot { background: var(--bg3); border: 2px dashed var(--bg4); border-radius: var(--radius); padding: 0.5rem 0.7rem; margin: 3px 0; min-height: 2.4rem; display: flex; align-items: center; gap: 0.5rem; font-size: 0.82rem; transition: 0.2s; }
@@ -318,7 +323,8 @@ const ST = {
   detected: null,               // auto-detected source structure
   mappings: [],                 // [{ src:{type,name,fileIdx,postType}, tgt:{name,type} }]
   parentCatName: 'Etappen',    // configurable parent category name
-  processes: {},                // id -> { name, mappings[], parentCatName }
+  customTargets: [],            // user-added target fields [{name, type:'meta'}]
+  processes: {},                // id -> { name, mappings[], parentCatName, customTargets }
   activeProcess: null,          // loaded process id
   result: null,                 // pipeline output { posts[], categories[] }
   validation: null,
@@ -352,6 +358,7 @@ function renderProcs() {
       ST.activeProcess = id;
       ST.mappings = JSON.parse(JSON.stringify(p.mappings || []));
       ST.parentCatName = p.parentCatName || 'Etappen';
+      ST.customTargets = JSON.parse(JSON.stringify(p.customTargets || []));
       renderProcs();
       toast('Prozess "' + p.name + '" geladen', 't-ok');
     };
@@ -678,6 +685,29 @@ function renderDnD() {
     }
     th += '</div>';
   }
+
+  // Custom meta targets (user-added)
+  th += '<div class="grp"><div class="grp-title">6. Eigene Meta-Felder — fuer zusaetzliche Zuordnungen</div>';
+  for (const ct of ST.customTargets) {
+    const mp = ST.mappings.find(m => m.tgt.name === ct.name);
+    th += `<div class="tgt-slot${mp?' filled':''}" data-tn="${esc(ct.name)}" data-tt="meta">
+      <span class="t-tag">meta</span>
+      <span class="t-label">${esc(ct.name)}</span>
+      ${mp ? `<span class="mapped">${esc(mp.src.name)} <span class="x" data-rm="${esc(ct.name)}">&times;</span></span>` : ''}
+      <span class="x" data-del-custom="${esc(ct.name)}" title="Feld entfernen" style="cursor:pointer;opacity:0.4;color:var(--red);margin-left:auto;">&times;</span>
+    </div>`;
+  }
+  th += `<div class="add-field-row">
+    <input type="text" id="new-custom-field" placeholder="Meta-Feldname (z.B. wg_video_title)">
+    <button class="btn btn-s btn-sm" id="btn-add-custom">+ Feld</button>
+  </div>`;
+  th += '</div>';
+
+  // Passthrough note
+  th += `<div class="passthrough-note">
+    <strong>Automatischer Durchlauf:</strong> Alle Meta-Felder, die nicht mit _ beginnen (z.B. wg_stop_title, nettopreis, heading_text...) werden <strong>automatisch uebernommen</strong> — auch ohne explizites Mapping hier! Du musst nur die Felder zuordnen, die eine <em>besondere Behandlung</em> brauchen (Umbenennung, Verknuepfung, Extraktion).
+  </div>`;
+
   tgtEl.innerHTML = th;
 
   // === ATTACH EVENTS ===
@@ -720,8 +750,36 @@ function renderDnD() {
 
   // Inline config inputs (e.g., parent category name)
   tgtEl.querySelectorAll('.t-input').forEach(el => {
-    el.onclick = e => e.stopPropagation(); // prevent drag events
+    el.onclick = e => e.stopPropagation();
     el.oninput = () => { ST[el.dataset.key] = el.value.trim() || el.placeholder; };
+  });
+
+  // Add custom field button
+  const addBtn = $('btn-add-custom');
+  const addInp = $('new-custom-field');
+  if (addBtn && addInp) {
+    addInp.onclick = e => e.stopPropagation();
+    addBtn.onclick = e => {
+      e.stopPropagation();
+      const name = addInp.value.trim();
+      if (!name) { toast('Bitte Feldname eingeben', 't-err'); return; }
+      if (ST.customTargets.some(ct => ct.name === name)) { toast('Feld existiert bereits', 't-err'); return; }
+      ST.customTargets.push({ name, type: 'meta' });
+      renderDnD(); renderPairs();
+      toast('Zielfeld "' + name + '" hinzugefuegt', 't-ok');
+    };
+    addInp.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); addBtn.click(); } };
+  }
+
+  // Delete custom field buttons
+  tgtEl.querySelectorAll('[data-del-custom]').forEach(el => {
+    el.onclick = e => {
+      e.stopPropagation();
+      const name = el.dataset.delCustom;
+      ST.customTargets = ST.customTargets.filter(ct => ct.name !== name);
+      ST.mappings = ST.mappings.filter(m => m.tgt.name !== name);
+      renderDnD(); renderPairs();
+    };
   });
 }
 
@@ -1172,7 +1230,7 @@ function init() {
     const name = $('proc-name').value.trim();
     if (!name) { toast('Bitte Prozess-Name eingeben', 't-err'); return; }
     const id = name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-    ST.processes[id] = { name, mappings: JSON.parse(JSON.stringify(ST.mappings)), parentCatName: ST.parentCatName };
+    ST.processes[id] = { name, mappings: JSON.parse(JSON.stringify(ST.mappings)), parentCatName: ST.parentCatName, customTargets: JSON.parse(JSON.stringify(ST.customTargets)) };
     ST.activeProcess = id;
     saveProcs();
     toast('Prozess "' + name + '" gespeichert!', 't-ok');
