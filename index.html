@@ -185,134 +185,161 @@ tr:hover td { background: rgba(255,255,255,0.02); }
 <body>
 <div class="app">
   <header>
-    <h1>LMS <span>&rarr;</span> WordPress <span>Migration Tool</span></h1>
-    <p>Drag &amp; Drop Mapping — einmal zuordnen, immer wieder nutzen</p>
+    <h1>Kursinhalte <span>&rarr;</span> WordPress <span>Umzugs-Helfer</span></h1>
+    <p>In 4 Schritten von der alten Plattform zur neuen WordPress-Seite</p>
   </header>
 
+  <div class="card" style="background:linear-gradient(135deg,rgba(108,138,255,0.08),rgba(74,222,128,0.08));border:1px solid rgba(108,138,255,0.3);">
+    <h2 style="font-size:0.95rem;">&#128161; So funktioniert dieser Helfer</h2>
+    <p style="font-size:0.82rem;color:var(--text2);margin:0.3rem 0;">Du hast Lektionen, Sektionen und Angebote in deinem alten System. Dieser Helfer macht daraus eine Datei, die du in WordPress hochladen kannst. Du musst <strong>kein Technik-Profi</strong> sein.</p>
+    <ol style="font-size:0.82rem;color:var(--text2);margin:0.5rem 0 0 1.2rem;line-height:1.7;">
+      <li><strong>Schritt 1:</strong> Du laedst deine Export-Dateien (XML) aus dem alten System hoch.</li>
+      <li><strong>Schritt 2:</strong> Du sagst dem Helfer, was wohin gehoeren soll. <em>Tipp: Klicke einfach den gruenen Knopf "Alles automatisch zuordnen" — das macht es fuer dich.</em></li>
+      <li><strong>Schritt 3:</strong> Du schaust dir an, was rauskommt, bevor es nach WordPress geht.</li>
+      <li><strong>Schritt 4:</strong> Du laedst die fertige Datei herunter und importierst sie in WordPress.</li>
+    </ol>
+  </div>
+
   <nav class="stepper" id="stepper">
-    <button class="step-btn active" data-s="0"><span class="n">1</span>Dateien</button>
-    <button class="step-btn" data-s="1"><span class="n">2</span>Mapping</button>
-    <button class="step-btn" data-s="2"><span class="n">3</span>Vorschau</button>
-    <button class="step-btn" data-s="3"><span class="n">4</span>Export</button>
+    <button class="step-btn active" data-s="0"><span class="n">1</span>Dateien hochladen</button>
+    <button class="step-btn" data-s="1"><span class="n">2</span>Zuordnen</button>
+    <button class="step-btn" data-s="2"><span class="n">3</span>Anschauen</button>
+    <button class="step-btn" data-s="3"><span class="n">4</span>Herunterladen</button>
   </nav>
 
   <!-- ===== STEP 1 — FILES ===== -->
   <div class="panel show" id="p0">
     <div class="card">
-      <h2>XML-Dateien hochladen</h2>
-      <p class="hint">Lade die XML-Export-Dateien deiner Quellplattform hoch. Das Tool erkennt automatisch alle Post-Types, Meta-Keys, Taxonomien und Content-Muster.</p>
+      <h2>Schritt 1: Deine Export-Dateien hochladen</h2>
+      <p class="hint">Hier legst du deine Export-Dateien aus dem alten System ab. Das sind meistens 3 XML-Dateien: eine fuer die <strong>Lektionen</strong>, eine fuer die <strong>Sektionen/Etappen</strong> und eine fuer die <strong>Angebote/Produkte</strong>. Du kannst die Dateien einfach in die grauen Felder ziehen oder draufklicken.</p>
       <div class="upload-grid" id="upload-grid"></div>
       <div class="gap" style="margin-top:0.75rem;">
-        <button class="btn btn-s btn-sm" id="btn-add-slot">+ Weiteren Upload-Slot</button>
-        <button class="btn btn-s btn-sm" id="btn-rm-slot">- Slot entfernen</button>
+        <button class="btn btn-s btn-sm" id="btn-add-slot">+ Noch ein Datei-Feld hinzufuegen</button>
+        <button class="btn btn-s btn-sm" id="btn-rm-slot">- Letztes Feld entfernen</button>
       </div>
     </div>
 
     <div class="card">
-      <h2>Gespeicherte Prozesse</h2>
-      <p class="hint">Falls du bereits ein Mapping erstellt hast, lade es hier. Die Zuordnungen werden in Schritt 2 vorausgefuellt.</p>
+      <h2>Frueher gespeicherte Vorlagen</h2>
+      <p class="hint">Wenn du frueher schon einmal eine Zuordnung gemacht und gespeichert hast, kannst du sie hier per Klick laden. Die Felder im naechsten Schritt sind dann schon ausgefuellt — du sparst dir die Arbeit.</p>
       <div class="proc-grid" id="proc-grid"></div>
     </div>
 
     <div class="nav-row">
       <div></div>
-      <button class="btn btn-p" id="btn-to-mapping" disabled>Weiter zum Mapping &rarr;</button>
+      <button class="btn btn-p" id="btn-to-mapping" disabled>Weiter zu Schritt 2 &rarr;</button>
     </div>
   </div>
 
   <!-- ===== STEP 2 — DRAG & DROP MAPPING ===== -->
   <div class="panel" id="p1">
     <div class="card">
-      <h2>Drag &amp; Drop Mapping</h2>
-      <p class="hint">Ziehe die erkannten Quell-Felder (links, orange) auf die passenden WordPress-Zielfelder (rechts, gruen). Jede Zuordnung wird sofort sichtbar.</p>
+      <h2>Schritt 2: Was soll wohin gehoeren?</h2>
+      <p class="hint">Hier sagst du dem Helfer, welche Inhalte aus deinem alten System wo in WordPress ankommen sollen. <strong>Am einfachsten:</strong> Klicke einmal auf den gruenen Knopf weiter unten — der Helfer macht das automatisch fuer dich. Falls etwas nicht passt, kannst du es danach noch von Hand korrigieren.</p>
       <div class="mapping-guide" id="mapping-guide">
-        <strong>Schnellstart:</strong> Klicke den Button um alle Zuordnungen automatisch nach der MemberPress-Spezifikation zu setzen. Du kannst danach einzelne Zuordnungen anpassen.
+        <strong>&#9889; Empfehlung:</strong> Lass den Helfer alles automatisch zuordnen. Das funktioniert in 99% der Faelle und du musst nichts wissen.
         <div class="gap" style="margin-top:0.5rem;">
-          <button class="btn btn-g" id="btn-auto-map">Auto-Mapping anwenden (MemberPress → WordPress)</button>
+          <button class="btn btn-g" id="btn-auto-map">&#10003; Alles automatisch zuordnen</button>
         </div>
       </div>
+      <p class="hint" style="margin-top:1rem;"><strong>Falls du etwas selbst zuordnen willst:</strong> In der linken Spalte stehen die Inhalte aus deinem alten System (orange). In der rechten Spalte stehen die Plaetze in WordPress (gruen). Du nimmst einfach einen orangen Eintrag mit der Maus, ziehst ihn nach rechts auf den passenden gruenen Platz und laesst los. Fertig.</p>
       <div class="dnd" id="dnd">
         <div class="dnd-col">
-          <div class="dnd-head src" id="src-head">Quelle (erkannt)</div>
+          <div class="dnd-head src" id="src-head">Aus deinem alten System</div>
           <div class="dnd-body" id="src-body"></div>
         </div>
         <div class="dnd-mid">
           <span>&rarr;</span>
-          <small>Drag</small>
+          <small>Ziehen</small>
         </div>
         <div class="dnd-col">
-          <div class="dnd-head tgt">WordPress (Ziel)</div>
+          <div class="dnd-head tgt">In WordPress</div>
           <div class="dnd-body" id="tgt-body"></div>
         </div>
       </div>
     </div>
     <div class="card">
-      <h2>Aktuelle Zuordnungen (<span id="pair-count">0</span>)</h2>
+      <h2>Deine bisherigen Zuordnungen (<span id="pair-count">0</span>)</h2>
       <div id="pairs-list"></div>
     </div>
     <div class="card">
-      <h2>Prozess speichern</h2>
-      <p class="hint">Speichere dieses Mapping als wiederverwendbaren Prozess, z.B. "MemberPress to WordPress". Im Browser-Cache werden Prozesse fuer diesen Computer gespeichert.</p>
+      <h2>&#128190; Diese Zuordnungen als Vorlage sichern</h2>
+      <p class="hint">Wenn du diese Zuordnungen oefter brauchst, speichere sie als Vorlage. Du kannst sie spaeter mit einem Klick wieder laden, ohne alles neu zu machen. <strong>Wichtig:</strong> Die Vorlage wird nur in deinem Browser auf diesem Computer gespeichert. Wenn du den Browser-Verlauf loeschst oder einen anderen Computer benutzt, ist sie weg. Fuer eine Sicherung, die nirgendwo verloren gehen kann, nutze die naechste Karte ("als Datei sichern").</p>
       <div class="cfg">
-        <label>Prozess-Name:</label>
-        <input type="text" id="proc-name" placeholder="z.B. MemberPress → WordPress">
+        <label>Name der Vorlage:</label>
+        <input type="text" id="proc-name" placeholder="z.B. Mein Online-Kurs">
       </div>
       <div class="gap" style="margin-top:0.5rem;">
-        <button class="btn btn-g btn-sm" id="btn-save-proc">Im Browser speichern</button>
-        <button class="btn btn-s btn-sm" id="btn-clear-map">Alle Zuordnungen loeschen</button>
+        <button class="btn btn-g btn-sm" id="btn-save-proc">In diesem Browser speichern</button>
+        <button class="btn btn-s btn-sm" id="btn-clear-map">Alle Zuordnungen wieder loeschen</button>
       </div>
     </div>
     <div class="card">
-      <h2>Mapping als Datei sichern</h2>
-      <p class="hint">Lade dein aktuelles Mapping als JSON-Datei herunter und speichere es lokal — so geht es nie verloren, auch nicht beim Cache-Loeschen oder auf einem anderen PC. Die Datei kannst du jederzeit wieder hochladen.</p>
+      <h2>&#128193; Sichere Datei-Sicherung (empfohlen)</h2>
+      <p class="hint">Lade deine Zuordnungen als Datei auf deinen Computer herunter — z.B. auf den Desktop oder in deine Cloud. Diese Datei geht nie verloren und du kannst sie auch auf einem anderen Computer benutzen. Spaeter klickst du einfach auf "Vorlage hochladen" und alles ist wieder da.</p>
       <div class="gap" style="margin-top:0.5rem;">
-        <button class="btn btn-p btn-sm" id="btn-export-map">&#128190; Mapping als Datei herunterladen</button>
-        <button class="btn btn-g btn-sm" id="btn-import-map">&#128194; Mapping aus Datei laden</button>
+        <button class="btn btn-p btn-sm" id="btn-export-map">&#11015; Vorlage als Datei herunterladen</button>
+        <button class="btn btn-g btn-sm" id="btn-import-map">&#11014; Vorlage aus Datei hochladen</button>
         <input type="file" id="map-file-input" accept=".json,application/json" style="display:none;">
       </div>
     </div>
     <div class="nav-row">
       <button class="btn btn-s" id="btn-back-1">&larr; Zurueck</button>
-      <button class="btn btn-p" id="btn-to-preview">Vorschau &rarr;</button>
+      <button class="btn btn-p" id="btn-to-preview">Weiter zum Anschauen &rarr;</button>
     </div>
   </div>
 
   <!-- ===== STEP 3 — PREVIEW ===== -->
   <div class="panel" id="p2">
     <div class="card">
-      <h2>Vorschau &amp; Validierung</h2>
+      <h2>Schritt 3: So wird es in WordPress aussehen</h2>
+      <p class="hint">Hier siehst du, wie deine Inhalte in WordPress ankommen werden. Pruefe vor allem die <strong>rot markierten Zeilen</strong> — das sind Lektionen, denen noch keine Sektion zugeordnet werden konnte. Wenn alles passt, gehe zum letzten Schritt.</p>
       <div class="v-bar" id="v-bar"></div>
       <div class="tabs" id="pv-tabs"></div>
       <div id="pv-panels"></div>
       <div id="v-list" style="margin-top:1rem;"></div>
     </div>
     <div class="nav-row">
-      <button class="btn btn-s" id="btn-back-2">&larr; Zurueck</button>
-      <button class="btn btn-p" id="btn-to-export">Export &rarr;</button>
+      <button class="btn btn-s" id="btn-back-2">&larr; Zurueck zur Zuordnung</button>
+      <button class="btn btn-p" id="btn-to-export">Weiter zum Herunterladen &rarr;</button>
     </div>
   </div>
 
   <!-- ===== STEP 4 — EXPORT ===== -->
   <div class="panel" id="p3">
     <div class="card">
-      <h2>WXR Export</h2>
+      <h2>Schritt 4: Datei fuer WordPress herunterladen</h2>
+      <p class="hint">Hier siehst du eine Zusammenfassung dessen, was importiert wird. Klicke dann auf <strong>"Datei vorbereiten"</strong> und danach auf <strong>"Datei herunterladen"</strong>. Du bekommst eine .xml-Datei, die du in WordPress unter <em>Werkzeuge &rarr; Daten importieren &rarr; WordPress</em> hochladen kannst.</p>
       <div class="stat-grid" id="exp-stats"></div>
       <div class="cfg">
-        <label>Site URL:</label>
-        <input type="text" id="exp-url" value="https://example.com">
+        <label>Adresse deiner WordPress-Seite:</label>
+        <input type="text" id="exp-url" value="https://example.com" placeholder="z.B. https://meinekursseite.de">
       </div>
       <div class="cfg">
-        <label>Author:</label>
-        <input type="text" id="exp-author" value="admin">
+        <label>Dein WordPress-Benutzername:</label>
+        <input type="text" id="exp-author" value="admin" placeholder="z.B. admin">
       </div>
       <div class="gap" style="margin-top:0.75rem;">
-        <button class="btn btn-p" id="btn-gen">WXR generieren</button>
-        <button class="btn btn-g" id="btn-dl" disabled>Download .xml</button>
+        <button class="btn btn-p" id="btn-gen">&#9881; Datei vorbereiten</button>
+        <button class="btn btn-g" id="btn-dl" disabled>&#11015; Datei herunterladen</button>
       </div>
+      <p class="hint" style="margin-top:0.75rem;font-size:0.75rem;">Nach dem Klick auf "Datei vorbereiten" siehst du unten einen Vorschau-Auszug der erzeugten Datei. Das ist nur zur Kontrolle — du musst nichts daran aendern.</p>
       <div class="xml-box" id="xml-box" style="display:none;"></div>
     </div>
+    <div class="card">
+      <h2>&#10067; Wie importiere ich die Datei in WordPress?</h2>
+      <ol style="font-size:0.82rem;color:var(--text2);margin-left:1.2rem;line-height:1.7;">
+        <li>Logge dich in deinen WordPress-Admin-Bereich ein.</li>
+        <li>Gehe links im Menue auf <strong>Werkzeuge &rarr; Daten importieren</strong>.</li>
+        <li>Suche den Eintrag <strong>"WordPress"</strong> und klicke auf "Jetzt installieren" (falls noch nicht installiert).</li>
+        <li>Klicke dann auf <strong>"Importer ausfuehren"</strong>.</li>
+        <li>Waehle die heruntergeladene .xml-Datei aus und klicke auf "Datei hochladen und importieren".</li>
+        <li>Falls gefragt: Setze einen Haken bei <strong>"Dateianhaenge importieren"</strong> und bestaetige.</li>
+        <li>Fertig! Deine Inhalte sind in WordPress.</li>
+      </ol>
+    </div>
     <div class="nav-row">
-      <button class="btn btn-s" id="btn-back-3">&larr; Zurueck</button>
+      <button class="btn btn-s" id="btn-back-3">&larr; Zurueck zum Anschauen</button>
       <div></div>
     </div>
   </div>
@@ -597,22 +624,22 @@ function detect() {
 //  WORDPRESS TARGET SCHEMA
 // ================================================================
 const WP_TARGETS = [
-  { group: '1. Inhaltstypen — Was wird woraus?', items: [
-    { name: 'post', type: 'post_type', desc: 'WordPress Beitrag ← hierher: deine Lektionen (mpcs-lesson)' },
-    { name: 'wg_angebot', type: 'post_type', desc: 'Angebot (wg_angebot) ← hierher: deine Produkte (memberpressproduct)' },
+  { group: '1. Was wird zu was?', items: [
+    { name: 'post', type: 'Beitrag', desc: 'Hierhin gehoeren deine Lektionen (Lerninhalte). Sie werden spaeter ganz normale WordPress-Beitraege.' },
+    { name: 'wg_angebot', type: 'Angebot', desc: 'Hierhin gehoeren deine Angebote oder Produkte (z.B. Premium-Mitgliedschaften).' },
   ]},
-  { group: '2. Kategorie-Hierarchie — Course → Section', items: [
-    { name: 'parent_category', type: 'category', desc: 'Oberkategorie (= Kurs) ← hierher: Kurs-Taxonomie oder Kurs-PostType', hasInput: true, inputKey: 'parentCatName', placeholder: 'z.B. Etappen' },
-    { name: 'child_category', type: 'category', desc: 'Unterkategorien (= Sektionen) ← hierher: Sektionen (mpcs-course), werden zu E01, E02...' },
+  { group: '2. Kategorien & Sektionen', items: [
+    { name: 'parent_category', type: 'Hauptkategorie', desc: 'Der Name der obersten Kategorie. Alle Sektionen werden darunter einsortiert. Du kannst den Namen unten frei eingeben.', hasInput: true, inputKey: 'parentCatName', placeholder: 'z.B. Etappen, Module, Kapitel...' },
+    { name: 'child_category', type: 'Unterkategorien', desc: 'Hierhin gehoeren deine Sektionen / Etappen. Aus jeder Sektion wird eine eigene Unterkategorie (z.B. E01, E02...).' },
   ]},
-  { group: '3. Verknuepfung — Welche Lektion gehoert zu welcher Sektion?', items: [
-    { name: 'section_join', type: 'join', desc: 'Lektion → Sektion ← hierher: das Feld _mpcs_lesson_section_id' },
+  { group: '3. Welche Lektion gehoert zu welcher Sektion?', items: [
+    { name: 'section_join', type: 'Verbindung', desc: 'Hierhin gehoert das Feld, das in deinen Lektionen steht und sagt, zu welcher Sektion sie gehoeren. (Im alten System heisst dieses Feld meist "_mpcs_lesson_section_id".)' },
   ]},
-  { group: '4. Sortierung — In welcher Reihenfolge?', items: [
-    { name: 'menu_order', type: 'field', desc: 'Reihenfolge ← hierher: das Feld _mpcs_lesson_lesson_order' },
+  { group: '4. Reihenfolge der Lektionen', items: [
+    { name: 'menu_order', type: 'Sortierung', desc: 'Hierhin gehoert das Feld, das die Reihenfolge der Lektionen bestimmt. (Im alten System meist "_mpcs_lesson_lesson_order".)' },
   ]},
-  { group: '5. Quiz-Extraktion — Shortcode aus Inhalt holen', items: [
-    { name: 'extract_chained_quiz', type: 'extract', desc: '[chained-quiz X] wird aus dem Inhalt extrahiert → als wg_besenwagen_code gespeichert + aus Text entfernt' },
+  { group: '5. Quiz-Verknuepfungen aus dem Text holen', items: [
+    { name: 'extract_chained_quiz', type: 'Quiz', desc: 'Falls deine Lektionen Quiz-Codes wie "[chained-quiz 4]" im Text haben: Hierhin ziehen, dann werden sie automatisch herausgezogen und sauber in einem eigenen Feld gespeichert.' },
   ]},
 ];
 
@@ -683,13 +710,13 @@ function renderDnD() {
 
   // Post types
   if (d.postTypes.length) {
-    sh += '<div class="grp"><div class="grp-title">Post-Types — Was sind das fuer Inhalte?</div>';
+    sh += '<div class="grp"><div class="grp-title">Inhaltstypen — was wurde in deinen Dateien gefunden?</div>';
     for (const pt of d.postTypes) {
       const used = ST.mappings.some(m => m.src.type === 'post_type' && m.src.name === pt.name);
       const hint = pt.hint ? `<span class="desc">${esc(pt.hint)}</span>` : '';
-      const preview = pt.samples.length ? `<span class="preview">z.B. "${samp(pt.samples).map(esc).join('", "')}"</span>` : '';
+      const preview = pt.samples.length ? `<span class="preview">Beispiele: "${samp(pt.samples).map(esc).join('", "')}"</span>` : '';
       sh += `<div class="src-item${used?' used':''}" draggable="${!used}" data-t="post_type" data-n="${esc(pt.name)}" data-f="${esc(pt.fileIdx)}">
-        <div class="row1"><span class="tag">type</span><span class="nm">${esc(pt.name)}</span><span class="cnt">${pt.count} Stueck</span></div>
+        <div class="row1"><span class="tag">Typ</span><span class="nm">${esc(pt.name)}</span><span class="cnt">${pt.count} Stueck</span></div>
         ${hint}${preview}
       </div>`;
     }
@@ -698,13 +725,13 @@ function renderDnD() {
 
   // Taxonomies
   if (d.taxonomies.length) {
-    sh += '<div class="grp"><div class="grp-title">Taxonomien — Wie sind die Inhalte gruppiert?</div>';
+    sh += '<div class="grp"><div class="grp-title">Kategorien & Sektionen aus deinem alten System</div>';
     for (const tx of d.taxonomies) {
       const used = ST.mappings.some(m => m.src.type === 'taxonomy' && m.src.name === tx.name);
       const hint = tx.hint ? `<span class="desc">${esc(tx.hint)}</span>` : '';
-      const preview = tx.samples.length ? `<span class="preview">Begriffe: ${samp(tx.samples).map(esc).join(', ')}${tx.termCount > tx.samples.length ? ', ...' : ''}</span>` : '';
+      const preview = tx.samples.length ? `<span class="preview">Beispiele: ${samp(tx.samples).map(esc).join(', ')}${tx.termCount > tx.samples.length ? ', ...' : ''}</span>` : '';
       sh += `<div class="src-item${used?' used':''}" draggable="${!used}" data-t="taxonomy" data-n="${esc(tx.name)}" data-f="${esc(tx.fileIdx)}">
-        <div class="row1"><span class="tag">tax</span><span class="nm">${esc(tx.name)}</span><span class="cnt">${tx.termCount} Terme</span></div>
+        <div class="row1"><span class="tag">Kat</span><span class="nm">${esc(tx.name)}</span><span class="cnt">${tx.termCount} Stueck</span></div>
         ${hint}${preview}
       </div>`;
     }
@@ -725,13 +752,13 @@ function renderDnD() {
     // Manual fields first (orange, draggable)
     if (manual.length) {
       const ptHint = HINTS[pt] ? ' — ' + HINTS[pt] : '';
-      sh += `<div class="grp"><div class="grp-title">Braucht Zuordnung (${esc(pt)}${esc(ptHint)})</div>`;
+      sh += `<div class="grp"><div class="grp-title">Bitte selbst zuordnen (${esc(pt)}${esc(ptHint)})</div>`;
       for (const mk of manual) {
         const used = ST.mappings.some(m => m.src.type === 'meta' && m.src.name === mk.name && m.src.postType === pt);
         const hint = mk.hint ? `<span class="desc">${esc(mk.hint)}</span>` : '';
-        const preview = mk.samples.length ? `<span class="preview">Werte: ${samp(mk.samples, 30).map(esc).join(', ')}</span>` : '';
+        const preview = mk.samples.length ? `<span class="preview">Beispiele: ${samp(mk.samples, 30).map(esc).join(', ')}</span>` : '';
         sh += `<div class="src-item${used?' used':''}" draggable="${!used}" data-t="meta" data-n="${esc(mk.name)}" data-f="${esc(mk.fileIdx)}" data-pt="${esc(pt)}">
-          <div class="row1"><span class="tag">meta</span><span class="nm">${esc(mk.name)}</span></div>
+          <div class="row1"><span class="tag">Feld</span><span class="nm">${esc(mk.name)}</span></div>
           ${hint}${preview}
         </div>`;
       }
@@ -740,11 +767,11 @@ function renderDnD() {
 
     // Auto-passthrough fields (green/dimmed, not draggable by default)
     if (auto.length) {
-      sh += `<div class="grp"><div class="grp-title">Wird automatisch uebernommen (${esc(pt)}) — ${auto.length} Felder</div>`;
+      sh += `<div class="grp"><div class="grp-title">&#10003; Wird automatisch mitgenommen (${esc(pt)}) — ${auto.length} Felder, du musst nichts tun</div>`;
       for (const mk of auto) {
         const used = ST.mappings.some(m => m.src.type === 'meta' && m.src.name === mk.name && m.src.postType === pt);
-        const hint = mk.hint ? `<span class="desc">${esc(mk.hint)}</span>` : `<span class="desc">Wird 1:1 als WordPress-Meta uebernommen</span>`;
-        const preview = mk.samples.length ? `<span class="preview">Werte: ${samp(mk.samples, 30).map(esc).join(', ')}</span>` : '';
+        const hint = mk.hint ? `<span class="desc">${esc(mk.hint)}</span>` : `<span class="desc">Wird automatisch mit nach WordPress uebernommen.</span>`;
+        const preview = mk.samples.length ? `<span class="preview">Beispiele: ${samp(mk.samples, 30).map(esc).join(', ')}</span>` : '';
         sh += `<div class="src-item auto${used?' used':''}" draggable="${!used}" data-t="meta" data-n="${esc(mk.name)}" data-f="${esc(mk.fileIdx)}" data-pt="${esc(pt)}">
           <div class="row1"><span class="tag">auto</span><span class="nm">${esc(mk.name)}</span></div>
           ${hint}${preview}
@@ -756,12 +783,12 @@ function renderDnD() {
 
   // Content patterns
   if (d.patterns.length) {
-    sh += '<div class="grp"><div class="grp-title">Im Inhalt gefundene Muster</div>';
+    sh += '<div class="grp"><div class="grp-title">Im Lektion-Text gefundene Quiz-Codes</div>';
     for (const cp of d.patterns) {
       const used = ST.mappings.some(m => m.src.type === 'pattern' && m.src.name === cp.name);
       const hint = cp.hint ? `<span class="desc">${esc(cp.hint)}</span>` : '';
       sh += `<div class="src-item${used?' used':''}" draggable="${!used}" data-t="pattern" data-n="${esc(cp.name)}" data-f="${esc(cp.fileIdx)}">
-        <div class="row1"><span class="tag">muster</span><span class="nm">${esc(cp.example)}</span></div>
+        <div class="row1"><span class="tag">Quiz</span><span class="nm">${esc(cp.example)}</span></div>
         ${hint}
       </div>`;
     }
@@ -790,25 +817,25 @@ function renderDnD() {
   }
 
   // Custom meta targets (user-added)
-  th += '<div class="grp"><div class="grp-title">6. Eigene Meta-Felder — fuer zusaetzliche Zuordnungen</div>';
+  th += '<div class="grp"><div class="grp-title">6. Eigene Felder hinzufuegen (nur fuer Profis)</div>';
   for (const ct of ST.customTargets) {
     const mp = ST.mappings.find(m => m.tgt.name === ct.name);
     th += `<div class="tgt-slot${mp?' filled':''}" data-tn="${esc(ct.name)}" data-tt="meta">
-      <span class="t-tag">meta</span>
+      <span class="t-tag">Feld</span>
       <span class="t-label">${esc(ct.name)}</span>
       ${mp ? `<span class="mapped">${esc(mp.src.name)} <span class="x" data-rm="${esc(ct.name)}">&times;</span></span>` : ''}
       <span class="x" data-del-custom="${esc(ct.name)}" title="Feld entfernen" style="cursor:pointer;opacity:0.4;color:var(--red);margin-left:auto;">&times;</span>
     </div>`;
   }
   th += `<div class="add-field-row">
-    <input type="text" id="new-custom-field" placeholder="Meta-Feldname (z.B. wg_video_title)">
-    <button class="btn btn-s btn-sm" id="btn-add-custom">+ Feld</button>
+    <input type="text" id="new-custom-field" placeholder="Eigener Feldname">
+    <button class="btn btn-s btn-sm" id="btn-add-custom">+ Hinzufuegen</button>
   </div>`;
   th += '</div>';
 
   // Passthrough note
   th += `<div class="passthrough-note">
-    <strong>Automatischer Durchlauf:</strong> Alle Meta-Felder, die nicht mit _ beginnen (z.B. wg_stop_title, nettopreis, heading_text...) werden <strong>automatisch uebernommen</strong> — auch ohne explizites Mapping hier! Du musst nur die Felder zuordnen, die eine <em>besondere Behandlung</em> brauchen (Umbenennung, Verknuepfung, Extraktion).
+    <strong>&#10003; Gute Nachricht:</strong> Alle Zusatz-Informationen aus deinem alten System (z.B. Video-Titel, Preise, Beschreibungen...) werden <strong>automatisch mitgenommen</strong>. Du musst hier nichts zusaetzlich tun. Eigene Felder anlegen ist nur dann noetig, wenn etwas einen besonderen neuen Namen bekommen soll.
   </div>`;
 
   tgtEl.innerHTML = th;
@@ -1184,49 +1211,49 @@ function runPipeline() {
   const lessonPosts = posts.filter(p => ptMaps.some(m => m.tgt.name === 'post' && m.src.name === p._srcPT));
   const unres = lessonPosts.filter(p => p._unresolved);
   if (unres.length) {
-    errs.push({ sev: 'fail', msg: unres.length + ' Lektionen ohne aufgeloeste Sektion (PFLICHT: jede Lektion braucht eine Sektion)', det: 'Unbekannte Section-IDs: ' + [...new Set(unres.map(p => p._unresolved))].join(', ') });
+    errs.push({ sev: 'fail', msg: unres.length + ' Lektionen konnten keiner Sektion zugeordnet werden', det: 'Diese Lektionen haben in deinem alten System eine Sektions-Nummer, die hier nicht gefunden wurde. Pruefe, ob du auch die Sektionen-Datei hochgeladen hast. Unbekannte Nummern: ' + [...new Set(unres.map(p => p._unresolved))].join(', ') });
   }
   const noCat = lessonPosts.filter(p => p.categories.length === 0);
   if (noCat.length) {
-    errs.push({ sev: 'fail', msg: noCat.length + ' Lektionen ohne Kategorie-Zuordnung', det: noCat.slice(0, 5).map(p => '"' + p.title + '"').join(', ') + (noCat.length > 5 ? '...' : '') });
+    errs.push({ sev: 'fail', msg: noCat.length + ' Lektionen haben keine Kategorie bekommen', det: 'Beispiele: ' + noCat.slice(0, 5).map(p => '"' + p.title + '"').join(', ') + (noCat.length > 5 ? '...' : '') });
   }
 
   // Regel 2: Jede Sektion muss einen Namen haben
   const emptyCats = cats.filter(c => !c.name || c.name.trim() === '');
   if (emptyCats.length) {
-    errs.push({ sev: 'fail', msg: emptyCats.length + ' Kategorien ohne Namen', det: '' });
+    errs.push({ sev: 'fail', msg: emptyCats.length + ' Kategorien haben keinen Namen', det: 'Pruefe deine Sektionen-Datei.' });
   }
 
   // Regel 3: Jeder [chained-quiz] muss extrahiert sein
   if (extractMap) {
     const stillHasQuiz = posts.filter(p => /\[chained-quiz\s+\d+\]/.test(p.content));
     if (stillHasQuiz.length) {
-      errs.push({ sev: 'fail', msg: stillHasQuiz.length + ' Posts haben noch [chained-quiz] im Inhalt (sollte extrahiert sein)', det: '' });
+      errs.push({ sev: 'fail', msg: stillHasQuiz.length + ' Lektionen haben noch Quiz-Codes im Text', det: 'Diese sollten herausgezogen werden, sind es aber noch nicht. Bitte melden.' });
     }
     const withQuizMeta = posts.filter(p => p.meta.wg_besenwagen_code);
-    errs.push({ sev: 'pass', msg: withQuizMeta.length + ' Quiz-Codes extrahiert → wg_besenwagen_code', det: '' });
+    errs.push({ sev: 'pass', msg: withQuizMeta.length + ' Quiz-Codes wurden aus dem Text geholt und sauber gespeichert', det: '' });
   }
 
   // Regel 4: Keine leeren Kategorien
   const childCats = cats.filter(c => c.parentSlug);
   const emptySections = childCats.filter(c => !posts.some(p => p.categories.some(pc => pc.slug === c.slug)));
   if (emptySections.length) {
-    errs.push({ sev: 'warn', msg: emptySections.length + ' Kategorien ohne zugeordnete Posts', det: emptySections.map(c => c.name).join(', ') });
+    errs.push({ sev: 'warn', msg: emptySections.length + ' Kategorien sind leer (keine Lektion zugeordnet)', det: 'Diese Kategorien werden trotzdem angelegt: ' + emptySections.map(c => c.name).join(', ') });
   }
 
   // Regel 5: Keine doppelten Slugs (auto-dedupliziert)
   if (dupePostsFixed) {
-    errs.push({ sev: 'pass', msg: dupePostsFixed + ' doppelte Post-Slugs automatisch dedupliziert (-2, -3, ...)', det: '' });
+    errs.push({ sev: 'pass', msg: dupePostsFixed + ' doppelte Lektion-Adressen wurden automatisch korrigiert', det: 'Damit es in WordPress keine Konflikte gibt, wurde an doppelte URL-Kennungen "-2", "-3" usw. angehaengt.' });
   }
   if (dupeCatsFixed) {
-    errs.push({ sev: 'pass', msg: dupeCatsFixed + ' doppelte Kategorie-Slugs automatisch dedupliziert', det: '' });
+    errs.push({ sev: 'pass', msg: dupeCatsFixed + ' doppelte Kategorie-Adressen wurden automatisch korrigiert', det: '' });
   }
 
   // Erfolgs-Meldungen
-  if (cats.length) errs.push({ sev: 'pass', msg: cats.length + ' Kategorien erstellt (davon ' + childCats.length + ' Unter-Kategorien)', det: '' });
-  if (posts.length) errs.push({ sev: 'pass', msg: posts.length + ' Posts transformiert', det: '' });
+  if (cats.length) errs.push({ sev: 'pass', msg: cats.length + ' Kategorien werden in WordPress angelegt (davon ' + childCats.length + ' Unterkategorien)', det: '' });
+  if (posts.length) errs.push({ sev: 'pass', msg: posts.length + ' Inhalte werden in WordPress importiert', det: '' });
   const assignedLessons = lessonPosts.filter(p => p.categories.length > 0);
-  if (assignedLessons.length) errs.push({ sev: 'pass', msg: assignedLessons.length + '/' + lessonPosts.length + ' Lektionen haben Kategorie-Zuordnung', det: '' });
+  if (assignedLessons.length) errs.push({ sev: 'pass', msg: assignedLessons.length + ' von ' + lessonPosts.length + ' Lektionen sind einer Kategorie zugeordnet', det: '' });
 
   errs.sort((a, b) => ({fail:0,warn:1,pass:2}[a.sev]||0) - ({fail:0,warn:1,pass:2}[b.sev]||0));
   ST.validation = { errs, pass: errs.filter(e=>e.sev==='pass').length, warn: errs.filter(e=>e.sev==='warn').length, fail: errs.filter(e=>e.sev==='fail').length };
@@ -1329,9 +1356,9 @@ function renderPreview() {
 
   // Validation bar
   $('v-bar').innerHTML = `
-    <span class="v-badge" style="background:var(--green2);color:var(--green);">${pass} OK</span>
-    <span class="v-badge" style="background:var(--yellow2);color:var(--yellow);">${warn} Warnungen</span>
-    <span class="v-badge" style="background:var(--red2);color:var(--red);">${fail} Fehler</span>`;
+    <span class="v-badge" style="background:var(--green2);color:var(--green);">&#10003; ${pass} alles gut</span>
+    <span class="v-badge" style="background:var(--yellow2);color:var(--yellow);">&#9888; ${warn} Hinweise</span>
+    <span class="v-badge" style="background:var(--red2);color:var(--red);">&#10007; ${fail} Probleme</span>`;
 
   // Tabs
   const tabs = [{ id: 'cats', label: 'Kategorien (' + cats.length + ')' }];

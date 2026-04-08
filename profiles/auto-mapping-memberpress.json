@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "name": "Auto-Mapping (MemberPress \u2192 WordPress)",
+  "description": "Standard-Vorlage fuer den Umzug von MemberPress nach WordPress. Identisch mit dem 'Alles automatisch zuordnen'-Knopf in der App. In Schritt 2 'Vorlage aus Datei hochladen' klicken und diese Datei waehlen.",
+  "parentCatName": "Etappen",
+  "mappings": [
+    {
+      "src": { "type": "post_type", "name": "mpcs-lesson", "fileIdx": "0" },
+      "tgt": { "name": "post", "type": "post_type" }
+    },
+    {
+      "src": { "type": "post_type", "name": "memberpressproduct", "fileIdx": "0" },
+      "tgt": { "name": "wg_angebot", "type": "post_type" }
+    },
+    {
+      "src": { "type": "post_type", "name": "mpcs-course", "fileIdx": "0" },
+      "tgt": { "name": "child_category", "type": "category" }
+    },
+    {
+      "src": { "type": "taxonomy", "name": "mpcs-course-categories", "fileIdx": "0" },
+      "tgt": { "name": "parent_category", "type": "category" }
+    },
+    {
+      "src": { "type": "meta", "name": "_mpcs_lesson_section_id", "fileIdx": "0", "postType": "mpcs-lesson" },
+      "tgt": { "name": "section_join", "type": "join" }
+    },
+    {
+      "src": { "type": "meta", "name": "_mpcs_lesson_lesson_order", "fileIdx": "0", "postType": "mpcs-lesson" },
+      "tgt": { "name": "menu_order", "type": "field" }
+    },
+    {
+      "src": { "type": "pattern", "name": "[chained-quiz]", "fileIdx": "0" },
+      "tgt": { "name": "extract_chained_quiz", "type": "extract" }
+    }
+  ]
+}
