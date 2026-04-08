@@ -252,14 +252,23 @@ tr:hover td { background: rgba(255,255,255,0.02); }
     </div>
     <div class="card">
       <h2>Prozess speichern</h2>
-      <p class="hint">Speichere dieses Mapping als wiederverwendbaren Prozess, z.B. "MemberPress to WordPress".</p>
+      <p class="hint">Speichere dieses Mapping als wiederverwendbaren Prozess, z.B. "MemberPress to WordPress". Im Browser-Cache werden Prozesse fuer diesen Computer gespeichert.</p>
       <div class="cfg">
         <label>Prozess-Name:</label>
         <input type="text" id="proc-name" placeholder="z.B. MemberPress → WordPress">
       </div>
       <div class="gap" style="margin-top:0.5rem;">
-        <button class="btn btn-g btn-sm" id="btn-save-proc">Prozess speichern</button>
+        <button class="btn btn-g btn-sm" id="btn-save-proc">Im Browser speichern</button>
         <button class="btn btn-s btn-sm" id="btn-clear-map">Alle Zuordnungen loeschen</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Mapping als Datei sichern</h2>
+      <p class="hint">Lade dein aktuelles Mapping als JSON-Datei herunter und speichere es lokal — so geht es nie verloren, auch nicht beim Cache-Loeschen oder auf einem anderen PC. Die Datei kannst du jederzeit wieder hochladen.</p>
+      <div class="gap" style="margin-top:0.5rem;">
+        <button class="btn btn-p btn-sm" id="btn-export-map">&#128190; Mapping als Datei herunterladen</button>
+        <button class="btn btn-g btn-sm" id="btn-import-map">&#128194; Mapping aus Datei laden</button>
+        <input type="file" id="map-file-input" accept=".json,application/json" style="display:none;">
       </div>
     </div>
     <div class="nav-row">
@@ -1459,6 +1468,55 @@ function init() {
 
   // Clear mappings
   $('btn-clear-map').onclick = () => { ST.mappings = []; renderDnD(); renderPairs(); };
+
+  // Export mapping → JSON-Datei
+  $('btn-export-map').onclick = () => {
+    if (!ST.mappings.length) { toast('Noch keine Zuordnungen zum Speichern', 't-err'); return; }
+    const payload = {
+      version: 1,
+      created: new Date().toISOString(),
+      name: $('proc-name').value || 'mapping',
+      parentCatName: ST.parentCatName || 'Etappen',
+      mappings: ST.mappings,
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url;
+    a.download = 'mapping-' + slug(payload.name) + '-' + new Date().toISOString().slice(0, 10) + '.json';
+    a.click(); URL.revokeObjectURL(url);
+    toast('Mapping als Datei heruntergeladen', 't-ok');
+  };
+
+  // Import mapping ← JSON-Datei
+  $('btn-import-map').onclick = () => $('map-file-input').click();
+  $('map-file-input').onchange = (ev) => {
+    const file = ev.target.files[0];
+    if (!file) return;
+    const r = new FileReader();
+    r.onload = e => {
+      try {
+        const data = JSON.parse(e.target.result);
+        if (!data || !Array.isArray(data.mappings)) throw new Error('Ungueltige Mapping-Datei (kein mappings-Array)');
+        // Validierung der Mapping-Eintraege
+        for (const m of data.mappings) {
+          if (!m.src || !m.tgt || !m.src.type || !m.tgt.type) throw new Error('Defekter Mapping-Eintrag');
+        }
+        ST.mappings = data.mappings;
+        if (data.parentCatName) ST.parentCatName = data.parentCatName;
+        if (data.name) $('proc-name').value = data.name;
+        renderDnD();
+        renderPairs();
+        // parentCatName-Input nachziehen, falls vorhanden
+        const pInp = document.querySelector('[data-key="parentCatName"]');
+        if (pInp) pInp.value = ST.parentCatName;
+        toast(data.mappings.length + ' Zuordnungen aus Datei geladen', 't-ok');
+      } catch (err) {
+        toast('Fehler beim Laden: ' + err.message, 't-err');
+      }
+      ev.target.value = ''; // reset, damit dieselbe Datei nochmal geladen werden kann
+    };
+    r.readAsText(file);
+  };
 
   // Generate WXR
   $('btn-gen').onclick = () => {
