@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0"
+  xmlns:excerpt="http://wordpress.org/export/1.2/excerpt/"
+  xmlns:content="http://purl.org/rss/1.0/modules/content/"
+  xmlns:wfw="http://wellformedweb.org/CommentAPI/"
+  xmlns:dc="http://purl.org/dc/elements/1.1/"
+  xmlns:wp="http://wordpress.org/export/1.2/">
+<channel>
+<title>Lessons Export</title>
+<wp:wxr_version>1.2</wp:wxr_version>
+
+<item>
+  <title>Lektion 1: Einfuehrung</title>
+  <dc:creator><![CDATA[admin]]></dc:creator>
+  <content:encoded><![CDATA[<p>Willkommen.</p>[chained-quiz 4]<p>Viel Spass!</p>]]></content:encoded>
+  <wp:post_id>101</wp:post_id>
+  <wp:post_date><![CDATA[2024-01-15 10:00:00]]></wp:post_date>
+  <wp:post_name><![CDATA[lektion-1-einfuehrung]]></wp:post_name>
+  <wp:status><![CDATA[publish]]></wp:status>
+  <wp:menu_order>0</wp:menu_order>
+  <wp:post_type><![CDATA[mpcs-lesson]]></wp:post_type>
+  <wp:postmeta>
+    <wp:meta_key><![CDATA[_mpcs_lesson_section_id]]></wp:meta_key>
+    <wp:meta_value><![CDATA[201]]></wp:meta_value>
+  </wp:postmeta>
+  <wp:postmeta>
+    <wp:meta_key><![CDATA[_mpcs_lesson_lesson_order]]></wp:meta_key>
+    <wp:meta_value><![CDATA[1]]></wp:meta_value>
+  </wp:postmeta>
+  <wp:postmeta>
+    <wp:meta_key><![CDATA[wg_video_title]]></wp:meta_key>
+    <wp:meta_value><![CDATA[Intro Video]]></wp:meta_value>
+  </wp:postmeta>
+</item>
+
+<item>
+  <title>Lektion 2: Grundlagen</title>
+  <dc:creator><![CDATA[admin]]></dc:creator>
+  <content:encoded><![CDATA[<p>Grundlagen erlernen.</p>[chained-quiz 5]]]></content:encoded>
+  <wp:post_id>102</wp:post_id>
+  <wp:post_date><![CDATA[2024-01-16 10:00:00]]></wp:post_date>
+  <wp:post_name><![CDATA[lektion-2-grundlagen]]></wp:post_name>
+  <wp:status><![CDATA[publish]]></wp:status>
+  <wp:menu_order>0</wp:menu_order>
+  <wp:post_type><![CDATA[mpcs-lesson]]></wp:post_type>
+  <wp:postmeta>
+    <wp:meta_key><![CDATA[_mpcs_lesson_section_id]]></wp:meta_key>
+    <wp:meta_value><![CDATA[201]]></wp:meta_value>
+  </wp:postmeta>
+  <wp:postmeta>
+    <wp:meta_key><![CDATA[_mpcs_lesson_lesson_order]]></wp:meta_key>
+    <wp:meta_value><![CDATA[2]]></wp:meta_value>
+  </wp:postmeta>
+</item>
+
+<item>
+  <title>Lektion 3: Vertiefung</title>
+  <dc:creator><![CDATA[admin]]></dc:creator>
+  <content:encoded><![CDATA[<p>Vertiefung des Themas.</p>[chained-quiz 6]]]></content:encoded>
+  <wp:post_id>103</wp:post_id>
+  <wp:post_date><![CDATA[2024-01-17 10:00:00]]></wp:post_date>
+  <wp:post_name><![CDATA[lektion-3-vertiefung]]></wp:post_name>
+  <wp:status><![CDATA[publish]]></wp:status>
+  <wp:menu_order>0</wp:menu_order>
+  <wp:post_type><![CDATA[mpcs-lesson]]></wp:post_type>
+  <wp:postmeta>
+    <wp:meta_key><![CDATA[_mpcs_lesson_section_id]]></wp:meta_key>
+    <wp:meta_value><![CDATA[202]]></wp:meta_value>
+  </wp:postmeta>
+  <wp:postmeta>
+    <wp:meta_key><![CDATA[_mpcs_lesson_lesson_order]]></wp:meta_key>
+    <wp:meta_value><![CDATA[1]]></wp:meta_value>
+  </wp:postmeta>
+</item>
+
+<item>
+  <title>Lektion 4: Abschluss</title>
+  <dc:creator><![CDATA[admin]]></dc:creator>
+  <content:encoded><![CDATA[<p>Abschluss-Lektion ohne Quiz.</p>]]></content:encoded>
+  <wp:post_id>104</wp:post_id>
+  <wp:post_date><![CDATA[2024-01-18 10:00:00]]></wp:post_date>
+  <wp:post_name><![CDATA[lektion-4-abschluss]]></wp:post_name>
+  <wp:status><![CDATA[publish]]></wp:status>
+  <wp:menu_order>0</wp:menu_order>
+  <wp:post_type><![CDATA[mpcs-lesson]]></wp:post_type>
+  <wp:postmeta>
+    <wp:meta_key><![CDATA[_mpcs_lesson_section_id]]></wp:meta_key>
+    <wp:meta_value><![CDATA[202]]></wp:meta_value>
+  </wp:postmeta>
+  <wp:postmeta>
+    <wp:meta_key><![CDATA[_mpcs_lesson_lesson_order]]></wp:meta_key>
+    <wp:meta_value><![CDATA[2]]></wp:meta_value>
+  </wp:postmeta>
+</item>
+
+</channel>
+</rss>

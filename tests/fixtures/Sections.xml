@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0"
+  xmlns:excerpt="http://wordpress.org/export/1.2/excerpt/"
+  xmlns:content="http://purl.org/rss/1.0/modules/content/"
+  xmlns:dc="http://purl.org/dc/elements/1.1/"
+  xmlns:wp="http://wordpress.org/export/1.2/">
+<channel>
+<title>Sections Export</title>
+<wp:wxr_version>1.2</wp:wxr_version>
+
+<item>
+  <title>E01 Aufstieg</title>
+  <dc:creator><![CDATA[admin]]></dc:creator>
+  <content:encoded><![CDATA[]]></content:encoded>
+  <wp:post_id>201</wp:post_id>
+  <wp:post_date><![CDATA[2024-01-10 10:00:00]]></wp:post_date>
+  <wp:post_name><![CDATA[e01-aufstieg]]></wp:post_name>
+  <wp:status><![CDATA[publish]]></wp:status>
+  <wp:menu_order>1</wp:menu_order>
+  <wp:post_type><![CDATA[mpcs-course]]></wp:post_type>
+  <category domain="mpcs-course-categories" nicename="e01"><![CDATA[E01]]></category>
+</item>
+
+<item>
+  <title>E02 Plateau</title>
+  <dc:creator><![CDATA[admin]]></dc:creator>
+  <content:encoded><![CDATA[]]></content:encoded>
+  <wp:post_id>202</wp:post_id>
+  <wp:post_date><![CDATA[2024-01-11 10:00:00]]></wp:post_date>
+  <wp:post_name><![CDATA[e02-plateau]]></wp:post_name>
+  <wp:status><![CDATA[publish]]></wp:status>
+  <wp:menu_order>2</wp:menu_order>
+  <wp:post_type><![CDATA[mpcs-course]]></wp:post_type>
+  <category domain="mpcs-course-categories" nicename="e02"><![CDATA[E02]]></category>
+</item>
+
+</channel>
+</rss>

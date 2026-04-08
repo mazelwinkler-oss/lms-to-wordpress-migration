@@ -381,6 +381,29 @@ function parseXML(xmlStr) {
   const nsW = 'http://wordpress.org/export/1.2/', nsC = 'http://purl.org/rss/1.0/modules/content/',
         nsD = 'http://purl.org/dc/elements/1.1/', nsE = 'http://wordpress.org/export/1.2/excerpt/';
   const g = (p, t, ns) => { const el = ns ? p.getElementsByTagNameNS(ns, t)[0] : p.getElementsByTagName(t)[0]; return el ? el.textContent : ''; };
+
+  // === CHANNEL-LEVEL TERM/CATEGORY DEFINITIONS ===
+  // Erlaubt das Mappen von _mpcs_lesson_section_id (wenn das eine term_id ist) auf den Term-Slug
+  const terms = []; // { termId, taxonomy, slug, name, parentSlug }
+  for (const t of doc.getElementsByTagNameNS(nsW, 'term')) {
+    terms.push({
+      termId: g(t,'term_id',nsW),
+      taxonomy: g(t,'term_taxonomy',nsW),
+      slug: g(t,'term_slug',nsW),
+      name: g(t,'term_name',nsW),
+      parentSlug: g(t,'term_parent',nsW),
+    });
+  }
+  for (const c of doc.getElementsByTagNameNS(nsW, 'category')) {
+    terms.push({
+      termId: g(c,'term_id',nsW),
+      taxonomy: 'category',
+      slug: g(c,'category_nicename',nsW),
+      name: g(c,'cat_name',nsW),
+      parentSlug: g(c,'category_parent',nsW),
+    });
+  }
+
   const items = [];
   for (const it of doc.getElementsByTagName('item')) {
     const meta = {};
@@ -402,6 +425,8 @@ function parseXML(xmlStr) {
       creator: g(it,'creator',nsD), meta, taxonomies,
     });
   }
+  // terms an das Items-Array haengen (als spezielle Eigenschaft)
+  items._terms = terms;
   return items;
 }
 
@@ -932,10 +957,24 @@ function runPipeline() {
   const taxSlugToCat = {}; // taxonomy slug → category
   const slugToCat = {};    // slug → category
   const nameToCat = {};    // name → category
+  const termIdToCat = {};  // taxonomy term_id → category (Channel-Level wp:term)
   for (const c of cats) {
     if (c._srcId) secIdToCat[String(c._srcId)] = c;
     if (c._taxSlug) taxSlugToCat[c._taxSlug] = c;
     if (c.slug && c.parentSlug) { slugToCat[c.slug] = c; nameToCat[c.name] = c; }
+  }
+
+  // Channel-level terms aus allen Files sammeln
+  // Diese erlauben das Mappen einer term_id auf einen term_slug, der dann
+  // ueber taxSlugToCat zu einer Kategorie aufgeloest werden kann.
+  const termIdToSlug = {}; // term_id → term_slug (alle Files, alle Taxonomien)
+  for (const fd of Object.values(ST.files)) {
+    const ts = fd.items?._terms || [];
+    for (const t of ts) {
+      if (t.termId && t.slug) termIdToSlug[String(t.termId)] = t.slug;
+      // Ist der Term-Slug bereits eine Kategorie? Dann termId direkt mappen.
+      if (t.termId && taxSlugToCat[t.slug]) termIdToCat[String(t.termId)] = taxSlugToCat[t.slug];
+    }
   }
 
   // === TRANSFORM POSTS ===
@@ -992,7 +1031,7 @@ function runPipeline() {
       if (joinMap && joinMap.src.type === 'meta') {
         const secId = String(item.meta[joinMap.src.name] || '');
         if (secId) {
-          // Strategy 1: Direct lookup by source post_id
+          // Strategy 1: Direct lookup by source post_id (mpcs-course Item ID)
           let mc = secIdToCat[secId];
 
           // Strategy 2: Lookup via section item's slug/name
@@ -1019,6 +1058,21 @@ function runPipeline() {
             }
           }
 
+          // Strategy 5: secId ist eine term_id → ueber termIdToCat aufloesen
+          if (!mc) mc = termIdToCat[secId];
+
+          // Strategy 6: secId ist term_id → term_slug → taxSlugToCat
+          if (!mc && termIdToSlug[secId]) mc = taxSlugToCat[termIdToSlug[secId]];
+
+          // Strategy 7: Lessons eigene Taxonomien durchsuchen (oft enthaelt
+          // die Lesson selbst bereits den richtigen Section-Term als Kategorie)
+          if (!mc) {
+            for (const tx of item.taxonomies) {
+              mc = taxSlugToCat[tx.slug] || slugToCat[tx.slug] || nameToCat[tx.term];
+              if (mc) break;
+            }
+          }
+
           if (mc) {
             post.categories.push({ name: mc.name, slug: mc.slug });
             if (mc.parentSlug && parentCat) {
@@ -1026,6 +1080,29 @@ function runPipeline() {
             }
           } else {
             post._unresolved = secId;
+          }
+        } else {
+          // Kein _mpcs_lesson_section_id → trotzdem versuchen, ueber lesson taxonomies zu mappen
+          for (const tx of item.taxonomies) {
+            const mc = taxSlugToCat[tx.slug] || slugToCat[tx.slug] || nameToCat[tx.term];
+            if (mc) {
+              post.categories.push({ name: mc.name, slug: mc.slug });
+              if (mc.parentSlug && parentCat) {
+                post.categories.push({ name: parentCat.name, slug: parentCat.slug });
+              }
+              break;
+            }
+          }
+        }
+      } else {
+        // Kein joinMap → Lesson-Taxonomien als Fallback nutzen
+        for (const tx of item.taxonomies) {
+          const mc = taxSlugToCat[tx.slug] || slugToCat[tx.slug] || nameToCat[tx.term];
+          if (mc && !post.categories.some(c => c.slug === mc.slug)) {
+            post.categories.push({ name: mc.name, slug: mc.slug });
+            if (mc.parentSlug && parentCat) {
+              post.categories.push({ name: parentCat.name, slug: parentCat.slug });
+            }
           }
         }
       }
@@ -1045,6 +1122,47 @@ function runPipeline() {
       }
 
       posts.push(post);
+    }
+  }
+
+  // === AUTO-DEDUPE SLUGS (verhindert WordPress-Import-Fehler) ===
+  // Posts: gleicher post_type + slug → suffix anhaengen
+  const postSlugUsed = {};
+  let dupePostsFixed = 0;
+  for (const p of posts) {
+    const k = p.postType + ':' + p.slug;
+    if (postSlugUsed[k]) {
+      let n = 2;
+      while (postSlugUsed[p.postType + ':' + p.slug + '-' + n]) n++;
+      p.slug = p.slug + '-' + n;
+      postSlugUsed[p.postType + ':' + p.slug] = true;
+      dupePostsFixed++;
+    } else {
+      postSlugUsed[k] = true;
+    }
+  }
+  // Categories: gleicher slug → suffix anhaengen (auch parent vs child)
+  const catSlugUsed = {};
+  let dupeCatsFixed = 0;
+  for (const c of cats) {
+    if (catSlugUsed[c.slug]) {
+      let n = 2;
+      while (catSlugUsed[c.slug + '-' + n]) n++;
+      c.slug = c.slug + '-' + n;
+      catSlugUsed[c.slug] = true;
+      dupeCatsFixed++;
+    } else {
+      catSlugUsed[c.slug] = true;
+    }
+  }
+  // Wenn Cat-Slugs umbenannt wurden, parent-Refs in childs nachziehen
+  if (dupeCatsFixed) {
+    const slugByName = {};
+    for (const c of cats) slugByName[c.name] = c.slug;
+    if (parentCat) {
+      for (const c of cats) {
+        if (c.parentSlug && c !== parentCat) c.parentSlug = parentCat.slug;
+      }
     }
   }
 
@@ -1087,12 +1205,12 @@ function runPipeline() {
     errs.push({ sev: 'warn', msg: emptySections.length + ' Kategorien ohne zugeordnete Posts', det: emptySections.map(c => c.name).join(', ') });
   }
 
-  // Regel 5: Keine doppelten Slugs
-  const slugCheck = {};
-  for (const p of posts) {
-    const k = p.postType + ':' + p.slug;
-    if (slugCheck[k]) errs.push({ sev: 'fail', msg: 'Doppelter Slug: "' + p.slug + '" (' + p.postType + ')', det: '' });
-    else slugCheck[k] = true;
+  // Regel 5: Keine doppelten Slugs (auto-dedupliziert)
+  if (dupePostsFixed) {
+    errs.push({ sev: 'pass', msg: dupePostsFixed + ' doppelte Post-Slugs automatisch dedupliziert (-2, -3, ...)', det: '' });
+  }
+  if (dupeCatsFixed) {
+    errs.push({ sev: 'pass', msg: dupeCatsFixed + ' doppelte Kategorie-Slugs automatisch dedupliziert', det: '' });
   }
 
   // Erfolgs-Meldungen
@@ -1239,12 +1357,21 @@ function renderPreview() {
   const cp = document.createElement('div'); cp.className = 'tab-panel on'; cp.id = 'tp-cats'; cp.innerHTML = ch;
   panelsEl.appendChild(cp);
 
-  // Post tables
+  // Post tables — sortiert: unaufgeloeste zuerst
   for (const [pt, items] of Object.entries(byType)) {
+    const sorted = [...items].sort((a, b) => {
+      const aBad = (a._unresolved || a.categories.length === 0) ? 0 : 1;
+      const bBad = (b._unresolved || b.categories.length === 0) ? 0 : 1;
+      return aBad - bBad;
+    });
     let h = '<table><thead><tr><th>Titel</th><th>Slug</th><th>Kategorien</th><th>Order</th><th>Meta</th></tr></thead><tbody>';
-    for (const p of items) {
-      h += `<tr><td>${esc(p.title)}</td><td style="color:var(--text3)">${esc(p.slug)}</td>
-        <td>${p.categories.map(c => esc(c.name)).join(', ') || '<span style="color:var(--red)">—</span>'}</td>
+    for (const p of sorted) {
+      const rowStyle = (p._unresolved || p.categories.length === 0) ? ' style="background:rgba(248,113,113,0.05)"' : '';
+      const catCell = p.categories.length
+        ? p.categories.map(c => esc(c.name)).join(', ')
+        : `<span style="color:var(--red)">— ${p._unresolved ? 'sec_id=' + esc(p._unresolved) : 'keine Sektion'}</span>`;
+      h += `<tr${rowStyle}><td>${esc(p.title)}</td><td style="color:var(--text3)">${esc(p.slug)}</td>
+        <td>${catCell}</td>
         <td>${p.menuOrder}</td><td style="color:var(--text3);font-size:0.72rem">${Object.keys(p.meta).filter(k => p.meta[k]).join(', ') || '—'}</td></tr>`;
     }
     h += '</tbody></table>';
