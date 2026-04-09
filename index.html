@@ -454,6 +454,7 @@ function parseXML(xmlStr) {
     items.push({
       postId: g(it,'post_id',nsW), postType: g(it,'post_type',nsW),
       title: g(it,'title',null), content: g(it,'encoded',nsC),
+      link: g(it,'link',null),
       excerpt: g(it,'encoded',nsE), slug: g(it,'post_name',nsW),
       date: g(it,'post_date',nsW), dateGmt: g(it,'post_date_gmt',nsW),
       modified: g(it,'post_modified',nsW), status: g(it,'status',nsW),
@@ -1090,6 +1091,50 @@ function runPipeline() {
     return cats.find(c => c.slug === childCat.parentSlug) || null;
   };
 
+  // === SECTION-ID HEURISTIK (für MemberPress ohne mpcs-section-Export) ===
+  // mpcs-lesson._mpcs_lesson_section_id zeigt eigentlich auf einen mpcs-section
+  // Post-Typ, der typischerweise weder in der Lessons- noch in der Sections-XML
+  // enthalten ist. Wir leiten die Zuordnung daher aus der Lesson-URL ab:
+  //   https://.../etappen/{course-slug}/stop/{lesson-slug}/
+  // Innerhalb jedes Kurses sortieren wir die einzigartigen section_ids und ordnen
+  // sie positionsbasiert auf die Children des Kurses ab (in Dokumenten-Reihenfolge,
+  // wie die mpcs-course-categories <category>-Tags im mpcs-course Item stehen).
+  // Mehr section_ids als Children → Rest fällt auf den Parent zurück.
+  // Lessons ohne /etappen/ URL profitieren ebenfalls, da der gebaute Map global ist.
+  const secIdHeuristic = {};
+  {
+    const courseToLessons = {};
+    for (const it of allItems) {
+      if (it.postType !== 'mpcs-lesson') continue;
+      const link = it.link || '';
+      const m = link.match(/\/etappen\/([^/]+)\//);
+      if (!m) continue;
+      const courseSlug = m[1];
+      if (!courseToLessons[courseSlug]) courseToLessons[courseSlug] = [];
+      courseToLessons[courseSlug].push(it);
+    }
+    for (const [courseSlug, lessons] of Object.entries(courseToLessons)) {
+      const parent = parentCats.find(p => p.slug === courseSlug);
+      if (!parent) continue;
+      // Children dieses Parents (in Reihenfolge, wie sie in cats[] gepusht wurden,
+      // also in Dokumenten-Reihenfolge der mpcs-course-categories <category>-Tags)
+      const children = cats.filter(c => c.parentSlug === parent.slug);
+      // Unique section_ids sortiert
+      const idSet = new Set();
+      for (const l of lessons) {
+        const v = l.meta && l.meta._mpcs_lesson_section_id;
+        if (v) idSet.add(String(v));
+      }
+      const ids = [...idSet]
+        .map(s => parseInt(s, 10))
+        .filter(n => Number.isFinite(n))
+        .sort((a, b) => a - b);
+      for (let i = 0; i < ids.length; i++) {
+        secIdHeuristic[String(ids[i])] = children[i] || parent;
+      }
+    }
+  }
+
   // === TRANSFORM POSTS ===
   const posts = [];
   let pid = 200001;
@@ -1162,6 +1207,12 @@ function runPipeline() {
         if (secId) {
           // Strategy 1: Direct lookup by source post_id (mpcs-course Item ID)
           let mc = secIdToCat[secId];
+
+          // Strategy 1.5: URL-basierte sequenzielle Heuristik für MemberPress
+          // ohne mpcs-section Export. secIdHeuristic wurde oben gebaut, indem
+          // pro Kurs die unique section_ids sortiert auf die Children des Kurses
+          // (in Dokumenten-Reihenfolge) abgebildet wurden.
+          if (!mc) mc = secIdHeuristic[secId];
 
           // Strategy 2: Lookup via section item's slug/name
           if (!mc) {

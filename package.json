@@ -1,0 +1,26 @@
+{
+  "name": "migration-tool",
+  "version": "1.0.0",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mazelwinkler-oss/lms-to-wordpress-migration.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/mazelwinkler-oss/lms-to-wordpress-migration/issues"
+  },
+  "homepage": "https://github.com/mazelwinkler-oss/lms-to-wordpress-migration#readme",
+  "description": "",
+  "dependencies": {
+    "@xmldom/xmldom": "^0.9.9"
+  }
+}
