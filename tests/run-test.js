@@ -165,6 +165,18 @@ function runPipeline(ST) {
           if (mm.tgt.name === 'menu_order') post.menuOrder = parseInt(val, 10) || 0;
           else if (mm.tgt.name === 'title') post.title = val;
           else if (mm.tgt.name === 'slug') post.slug = val;
+        } else if (mm.tgt.type === 'transform') {
+          if (mm.tgt.name === 'split_benefits') {
+            let raw = String(val || '');
+            if (/^a:\d+:\{/.test(raw)) {
+              const matches = raw.match(/s:\d+:"([^"]*)"/g) || [];
+              const parts = matches.map(s => s.replace(/^s:\d+:"|"$/g, '')).filter(Boolean);
+              parts.slice(0, 5).forEach((p, i) => { post.meta['benefit_' + (i + 1)] = p; });
+            } else {
+              const parts = raw.split(/\r?\n|\||;/).map(s => s.trim()).filter(Boolean);
+              parts.slice(0, 5).forEach((p, i) => { post.meta['benefit_' + (i + 1)] = p; });
+            }
+          }
         }
       }
 
@@ -496,5 +508,59 @@ if (v6.assigned === v6.lessonPosts && lessonA.categories.some(c => c.name === 'E
   console.log('FAIL: Strategy 5/6 (term_id lookup) funktioniert nicht');
   v6.errs.forEach(e => console.log('  -', e.msg, e.det || ''));
 }
+
+console.log('\n=== TEST 7: Produkt-Meta-Mappings + split_benefits ===');
+const ST7 = {
+  files: {
+    0: { name: 'Online-Angebote.xml', items: parseXML(productsXml) },
+  },
+  parentCatName: 'Etappen',
+  mappings: [
+    { src: { type: 'post_type', name: 'memberpressproduct', fileIdx: '0' }, tgt: { name: 'wg_angebot', type: 'post_type' } },
+    { src: { type: 'meta', name: '_mepr_product_price', fileIdx: '0', postType: 'memberpressproduct' }, tgt: { name: 'nettopreis', type: 'meta' } },
+    { src: { type: 'meta', name: '_mepr_product_pricing_heading_text', fileIdx: '0', postType: 'memberpressproduct' }, tgt: { name: 'heading_text', type: 'meta' } },
+    { src: { type: 'meta', name: '_mepr_product_pricing_footer_text', fileIdx: '0', postType: 'memberpressproduct' }, tgt: { name: 'footer_text', type: 'meta' } },
+    { src: { type: 'meta', name: '_mepr_product_pricing_benefits', fileIdx: '0', postType: 'memberpressproduct' }, tgt: { name: 'split_benefits', type: 'transform' } },
+  ],
+};
+const r7 = runPipeline(ST7);
+const premium = r7.posts.find(p => p.title === 'Premium Angebot');
+console.log('Premium Angebot - Felder:');
+console.log('  nettopreis:', premium?.meta.nettopreis);
+console.log('  heading_text:', premium?.meta.heading_text);
+console.log('  footer_text:', premium?.meta.footer_text);
+console.log('  benefit_1:', premium?.meta.benefit_1);
+console.log('  benefit_2:', premium?.meta.benefit_2);
+console.log('  benefit_3:', premium?.meta.benefit_3);
+console.log('  benefit_4:', premium?.meta.benefit_4);
+const allOk = premium
+  && premium.meta.nettopreis === '99.00'
+  && premium.meta.heading_text === 'Jetzt buchen'
+  && premium.meta.footer_text === 'Inkl. MwSt.'
+  && premium.meta.benefit_1 === 'Volle Kursinhalte'
+  && premium.meta.benefit_2 === 'Lebenslanger Zugang'
+  && premium.meta.benefit_3 === 'Community-Zugriff'
+  && premium.meta.benefit_4 === 'Persoenlicher Support';
+console.log(allOk ? 'OK: Produkt-Felder + benefit_1..4 korrekt befuellt' : 'FAIL: Produkt-Felder unvollstaendig');
+
+console.log('\n=== TEST 8: split_benefits mit Pipe-Trenner ===');
+const ST8 = JSON.parse(JSON.stringify(ST7));
+ST8.files[0].items = parseXML(productsXml);
+ST8.files[0].items.find(i => i.title === 'Premium Angebot').meta._mepr_product_pricing_benefits = 'A | B | C | D | E | F | G';
+const r8 = runPipeline(ST8);
+const p8 = r8.posts.find(p => p.title === 'Premium Angebot');
+const ok8 = p8.meta.benefit_1 === 'A' && p8.meta.benefit_5 === 'E' && p8.meta.benefit_6 === undefined;
+console.log('benefit_1=' + p8.meta.benefit_1 + ', benefit_5=' + p8.meta.benefit_5 + ', benefit_6=' + p8.meta.benefit_6);
+console.log(ok8 ? 'OK: Pipe-Trenner + max-5-Limit funktionieren' : 'FAIL');
+
+console.log('\n=== TEST 9: split_benefits mit PHP-serialisiertem Array ===');
+const ST9 = JSON.parse(JSON.stringify(ST7));
+ST9.files[0].items = parseXML(productsXml);
+ST9.files[0].items.find(i => i.title === 'Premium Angebot').meta._mepr_product_pricing_benefits = 'a:3:{i:0;s:5:"Erste";i:1;s:7:"Zweiter";i:2;s:7:"Dritter";}';
+const r9 = runPipeline(ST9);
+const p9 = r9.posts.find(p => p.title === 'Premium Angebot');
+const ok9 = p9.meta.benefit_1 === 'Erste' && p9.meta.benefit_2 === 'Zweiter' && p9.meta.benefit_3 === 'Dritter';
+console.log('benefit_1=' + p9.meta.benefit_1 + ', benefit_2=' + p9.meta.benefit_2 + ', benefit_3=' + p9.meta.benefit_3);
+console.log(ok9 ? 'OK: PHP-serialisierte Benefits werden korrekt geparsed' : 'FAIL');
 
 console.log('\n=== ALLE TESTS DURCHGELAUFEN ===');

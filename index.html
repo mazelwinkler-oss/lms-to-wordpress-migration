@@ -641,6 +641,12 @@ const WP_TARGETS = [
   { group: '5. Quiz-Verknuepfungen aus dem Text holen', items: [
     { name: 'extract_chained_quiz', type: 'Quiz', desc: 'Falls deine Lektionen Quiz-Codes wie "[chained-quiz 4]" im Text haben: Hierhin ziehen, dann werden sie automatisch herausgezogen und sauber in einem eigenen Feld gespeichert.' },
   ]},
+  { group: '6. Angebots-Felder (fuer Produkte)', items: [
+    { name: 'nettopreis', type: 'Preis', desc: 'Hierhin gehoert der Netto-Preis deines Angebots. (Im alten System meist "_mepr_product_price".)' },
+    { name: 'heading_text', type: 'Ueberschrift', desc: 'Hierhin gehoert die Ueberschrift, die im Angebots-Block oben steht. (Im alten System meist "_mepr_product_pricing_heading_text".)' },
+    { name: 'footer_text', type: 'Fusstext', desc: 'Hierhin gehoert der Text, der im Angebots-Block unten steht. (Im alten System meist "_mepr_product_pricing_footer_text".)' },
+    { name: 'split_benefits', type: 'Vorteile-Liste', desc: 'Hierhin gehoert die Liste der Vorteile/Features deines Angebots. Wird automatisch in einzelne Felder aufgeteilt (max. 5 Eintraege). (Im alten System meist "_mepr_product_pricing_benefits".)' },
+  ]},
 ];
 
 // ================================================================
@@ -686,6 +692,26 @@ function autoMap() {
   // 7. [chained-quiz] → extract
   let cp = findPattern('[chained-quiz]');
   if (cp) { ST.mappings.push({ src: { type:'pattern', name:'[chained-quiz]', fileIdx:cp.fileIdx }, tgt: { name:'extract_chained_quiz', type:'extract' }}); count++; }
+
+  // 8-11. Produkt-Felder (MemberPress _mepr_*)
+  const productMetaRules = [
+    { src: '_mepr_product_price',                tgt: 'nettopreis',     type: 'meta' },
+    { src: '_mepr_product_pricing_heading_text', tgt: 'heading_text',   type: 'meta' },
+    { src: '_mepr_product_pricing_footer_text',  tgt: 'footer_text',    type: 'meta' },
+    { src: '_mepr_product_pricing_benefits',     tgt: 'split_benefits', type: 'transform' },
+  ];
+  for (const rule of productMetaRules) {
+    mk = findMeta(rule.src);
+    if (mk) {
+      ST.mappings.push({
+        src: { type: 'meta', name: rule.src, fileIdx: mk.fileIdx, postType: mk.postType },
+        tgt: { name: rule.tgt, type: rule.type },
+      });
+      count++;
+    }
+  }
+
+  console.log('AUTO-MAPPING RESULT', ST.mappings);
 
   renderDnD();
   renderPairs();
@@ -1038,7 +1064,7 @@ function runPipeline() {
         _srcPT: srcPT,
       };
 
-      // Apply meta → meta and meta → field mappings
+      // Apply meta → meta, meta → field, meta → transform mappings
       for (const mm of mappings) {
         if (mm.src.type !== 'meta') continue;
         if (mm.src.postType && mm.src.postType !== srcPT) continue;
@@ -1051,6 +1077,22 @@ function runPipeline() {
           if (mm.tgt.name === 'menu_order') post.menuOrder = parseInt(val, 10) || 0;
           else if (mm.tgt.name === 'title') post.title = val;
           else if (mm.tgt.name === 'slug') post.slug = val;
+        } else if (mm.tgt.type === 'transform') {
+          // split_benefits: zerlegt eine Liste in benefit_1..benefit_5
+          if (mm.tgt.name === 'split_benefits') {
+            // Akzeptiert Newlines, Pipes und Semikolons als Trenner
+            // Auch serialisierte Arrays wie a:3:{i:0;s:5:"foo";...} werden gestrippt
+            let raw = String(val || '');
+            // PHP-serialisierte Strings vorsichtig parsen: extrahiere s:N:"..."
+            if (/^a:\d+:\{/.test(raw)) {
+              const matches = raw.match(/s:\d+:"([^"]*)"/g) || [];
+              const parts = matches.map(s => s.replace(/^s:\d+:"|"$/g, '')).filter(Boolean);
+              parts.slice(0, 5).forEach((p, i) => { post.meta['benefit_' + (i + 1)] = p; });
+            } else {
+              const parts = raw.split(/\r?\n|\||;/).map(s => s.trim()).filter(Boolean);
+              parts.slice(0, 5).forEach((p, i) => { post.meta['benefit_' + (i + 1)] = p; });
+            }
+          }
         }
       }
 

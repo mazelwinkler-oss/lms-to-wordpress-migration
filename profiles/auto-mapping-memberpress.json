@@ -1,7 +1,7 @@
 {
   "version": 1,
   "name": "Auto-Mapping (MemberPress \u2192 WordPress)",
-  "description": "Standard-Vorlage fuer den Umzug von MemberPress nach WordPress. Identisch mit dem 'Alles automatisch zuordnen'-Knopf in der App. In Schritt 2 'Vorlage aus Datei hochladen' klicken und diese Datei waehlen.",
+  "description": "Standard-Vorlage fuer den Umzug von MemberPress nach WordPress. Identisch mit dem 'Alles automatisch zuordnen'-Knopf in der App. In Schritt 2 'Vorlage aus Datei hochladen' klicken und diese Datei waehlen. Hinweis: Der Wert von fileIdx wird beim Laden ignoriert; die Pipeline durchsucht alle hochgeladenen Dateien nach den jeweiligen Feldern.",
   "parentCatName": "Etappen",
   "mappings": [
     {
@@ -31,6 +31,22 @@
     {
       "src": { "type": "pattern", "name": "[chained-quiz]", "fileIdx": "0" },
       "tgt": { "name": "extract_chained_quiz", "type": "extract" }
+    },
+    {
+      "src": { "type": "meta", "name": "_mepr_product_price", "fileIdx": "0", "postType": "memberpressproduct" },
+      "tgt": { "name": "nettopreis", "type": "meta" }
+    },
+    {
+      "src": { "type": "meta", "name": "_mepr_product_pricing_heading_text", "fileIdx": "0", "postType": "memberpressproduct" },
+      "tgt": { "name": "heading_text", "type": "meta" }
+    },
+    {
+      "src": { "type": "meta", "name": "_mepr_product_pricing_footer_text", "fileIdx": "0", "postType": "memberpressproduct" },
+      "tgt": { "name": "footer_text", "type": "meta" }
+    },
+    {
+      "src": { "type": "meta", "name": "_mepr_product_pricing_benefits", "fileIdx": "0", "postType": "memberpressproduct" },
+      "tgt": { "name": "split_benefits", "type": "transform" }
     }
   ]
 }
