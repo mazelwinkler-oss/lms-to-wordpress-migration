@@ -77,17 +77,38 @@ function runPipeline(ST) {
 
   const ptMaps = mappings.filter(m => m.tgt.type === 'post_type');
   const catMap = mappings.find(m => m.tgt.name === 'child_category');
+  const parentMap = mappings.find(m => m.tgt.name === 'parent_category');
   const joinMap = mappings.find(m => m.tgt.name === 'section_join');
   const extractMap = mappings.find(m => m.tgt.name === 'extract_chained_quiz');
 
   const cats = [];
   let catId = 100001;
+  const parentCats = [];
 
+  // Modell B: parent_category aus post_type
+  if (parentMap && parentMap.src.type === 'post_type') {
+    const parentItems = allItems.filter(i => i.postType === parentMap.src.name);
+    for (const it of parentItems) {
+      const pc = {
+        termId: catId++,
+        name: it.title,
+        slug: it.slug || slug(it.title),
+        parentSlug: '',
+        _srcId: String(it.postId),
+        _ownTaxSlugs: it.taxonomies.map(t => t.slug),
+      };
+      cats.push(pc);
+      parentCats.push(pc);
+    }
+  }
+
+  // Modell A: parent_category als manueller String
   let parentCat = null;
-  if (catMap) {
+  if (parentCats.length === 0 && catMap) {
     const pName = ST.parentCatName || 'Etappen';
     parentCat = { termId: catId++, name: pName, slug: slug(pName), parentSlug: '' };
     cats.push(parentCat);
+    parentCats.push(parentCat);
   }
 
   if (catMap) {
@@ -95,7 +116,12 @@ function runPipeline(ST) {
     if (src.type === 'post_type') {
       const items = allItems.filter(i => i.postType === src.name);
       for (const it of items) {
-        cats.push({ termId: catId++, name: it.title, slug: it.slug || slug(it.title), parentSlug: parentCat?.slug || '', _srcId: String(it.postId) });
+        let pSlug = parentCats[0]?.slug || '';
+        if (parentCats.length > 1) {
+          const owner = parentCats.find(p => p._ownTaxSlugs && it.taxonomies.some(tx => p._ownTaxSlugs.includes(tx.slug)));
+          if (owner) pSlug = owner.slug;
+        }
+        cats.push({ termId: catId++, name: it.title, slug: it.slug || slug(it.title), parentSlug: pSlug, _srcId: String(it.postId) });
       }
     } else if (src.type === 'taxonomy') {
       const seen = new Set();
@@ -103,7 +129,12 @@ function runPipeline(ST) {
         for (const tx of it.taxonomies) {
           if (tx.taxonomy === src.name && !seen.has(tx.slug)) {
             seen.add(tx.slug);
-            cats.push({ termId: catId++, name: tx.term, slug: tx.slug, parentSlug: parentCat?.slug || '', _taxSlug: tx.slug });
+            let pSlug = parentCats[0]?.slug || '';
+            if (parentCats.length > 1) {
+              const owner = parentCats.find(p => p._ownTaxSlugs && p._ownTaxSlugs.includes(tx.slug));
+              if (owner) pSlug = owner.slug;
+            }
+            cats.push({ termId: catId++, name: tx.term, slug: tx.slug, parentSlug: pSlug, _taxSlug: tx.slug });
           }
         }
       }
@@ -128,6 +159,11 @@ function runPipeline(ST) {
       if (t.termId && taxSlugToCat[t.slug]) termIdToCat[String(t.termId)] = taxSlugToCat[t.slug];
     }
   }
+
+  const findParentFor = (childCat) => {
+    if (!childCat || !childCat.parentSlug) return null;
+    return cats.find(c => c.slug === childCat.parentSlug) || null;
+  };
 
   const posts = [];
   let pid = 200001;
@@ -203,7 +239,12 @@ function runPipeline(ST) {
                 }
               }
               if (!mc && secItem.title) {
-                const newCat = { termId: catId++, name: secItem.title, slug: secItem.slug || slug(secItem.title), parentSlug: parentCat?.slug || '', _srcId: String(secItem.postId) };
+                let pSlugForNew = parentCats[0]?.slug || '';
+                if (parentCats.length > 1) {
+                  const owner = parentCats.find(p => p._ownTaxSlugs && secItem.taxonomies.some(tx => p._ownTaxSlugs.includes(tx.slug)));
+                  if (owner) pSlugForNew = owner.slug;
+                }
+                const newCat = { termId: catId++, name: secItem.title, slug: secItem.slug || slug(secItem.title), parentSlug: pSlugForNew, _srcId: String(secItem.postId) };
                 cats.push(newCat);
                 secIdToCat[String(secItem.postId)] = newCat;
                 slugToCat[newCat.slug] = newCat;
@@ -222,9 +263,8 @@ function runPipeline(ST) {
           }
           if (mc) {
             post.categories.push({ name: mc.name, slug: mc.slug });
-            if (mc.parentSlug && parentCat) {
-              post.categories.push({ name: parentCat.name, slug: parentCat.slug });
-            }
+            const pc = findParentFor(mc);
+            if (pc) post.categories.push({ name: pc.name, slug: pc.slug });
           } else {
             post._unresolved = secId;
           }
@@ -233,9 +273,8 @@ function runPipeline(ST) {
             const mc = taxSlugToCat[tx.slug] || slugToCat[tx.slug] || nameToCat[tx.term];
             if (mc) {
               post.categories.push({ name: mc.name, slug: mc.slug });
-              if (mc.parentSlug && parentCat) {
-                post.categories.push({ name: parentCat.name, slug: parentCat.slug });
-              }
+              const pc = findParentFor(mc);
+              if (pc) post.categories.push({ name: pc.name, slug: pc.slug });
               break;
             }
           }
@@ -245,8 +284,9 @@ function runPipeline(ST) {
           const mc = taxSlugToCat[tx.slug] || slugToCat[tx.slug] || nameToCat[tx.term];
           if (mc && !post.categories.some(c => c.slug === mc.slug)) {
             post.categories.push({ name: mc.name, slug: mc.slug });
-            if (mc.parentSlug && parentCat) {
-              post.categories.push({ name: parentCat.name, slug: parentCat.slug });
+            const pc = findParentFor(mc);
+            if (pc && !post.categories.some(c => c.slug === pc.slug)) {
+              post.categories.push({ name: pc.name, slug: pc.slug });
             }
           }
         }
@@ -562,5 +602,129 @@ const p9 = r9.posts.find(p => p.title === 'Premium Angebot');
 const ok9 = p9.meta.benefit_1 === 'Erste' && p9.meta.benefit_2 === 'Zweiter' && p9.meta.benefit_3 === 'Dritter';
 console.log('benefit_1=' + p9.meta.benefit_1 + ', benefit_2=' + p9.meta.benefit_2 + ', benefit_3=' + p9.meta.benefit_3);
 console.log(ok9 ? 'OK: PHP-serialisierte Benefits werden korrekt geparsed' : 'FAIL');
+
+console.log('\n=== TEST 10: Modell B - mehrere Kurse als parent_category ===');
+// Szenario: 2 mpcs-course Items (Marketing-Kurs, Verkaufs-Kurs).
+// 4 Sektionen via mpcs-course-categories Taxonomie.
+// Jeder Kurs hat 2 Sektionen (über eigene category-Tags markiert).
+// Lessons sollen automatisch dem richtigen Kurs zugeordnet werden.
+const lessonsB = `<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0" xmlns:wp="http://wordpress.org/export/1.2/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:dc="http://purl.org/dc/elements/1.1/">
+<channel>
+<wp:wxr_version>1.2</wp:wxr_version>
+<item>
+  <title>Marketing Lektion 1</title>
+  <content:encoded><![CDATA[<p>L1</p>]]></content:encoded>
+  <wp:post_id>800</wp:post_id>
+  <wp:post_name><![CDATA[marketing-l1]]></wp:post_name>
+  <wp:status><![CDATA[publish]]></wp:status>
+  <wp:menu_order>1</wp:menu_order>
+  <wp:post_type><![CDATA[mpcs-lesson]]></wp:post_type>
+  <category domain="mpcs-course-categories" nicename="m-grundlagen"><![CDATA[Marketing Grundlagen]]></category>
+</item>
+<item>
+  <title>Marketing Lektion 2</title>
+  <content:encoded><![CDATA[<p>L2</p>]]></content:encoded>
+  <wp:post_id>801</wp:post_id>
+  <wp:post_name><![CDATA[marketing-l2]]></wp:post_name>
+  <wp:status><![CDATA[publish]]></wp:status>
+  <wp:menu_order>2</wp:menu_order>
+  <wp:post_type><![CDATA[mpcs-lesson]]></wp:post_type>
+  <category domain="mpcs-course-categories" nicename="m-fortgeschritten"><![CDATA[Marketing Fortgeschritten]]></category>
+</item>
+<item>
+  <title>Verkauf Lektion 1</title>
+  <content:encoded><![CDATA[<p>L3</p>]]></content:encoded>
+  <wp:post_id>802</wp:post_id>
+  <wp:post_name><![CDATA[verkauf-l1]]></wp:post_name>
+  <wp:status><![CDATA[publish]]></wp:status>
+  <wp:menu_order>1</wp:menu_order>
+  <wp:post_type><![CDATA[mpcs-lesson]]></wp:post_type>
+  <category domain="mpcs-course-categories" nicename="v-grundlagen"><![CDATA[Verkauf Grundlagen]]></category>
+</item>
+<item>
+  <title>Verkauf Lektion 2</title>
+  <content:encoded><![CDATA[<p>L4</p>]]></content:encoded>
+  <wp:post_id>803</wp:post_id>
+  <wp:post_name><![CDATA[verkauf-l2]]></wp:post_name>
+  <wp:status><![CDATA[publish]]></wp:status>
+  <wp:menu_order>2</wp:menu_order>
+  <wp:post_type><![CDATA[mpcs-lesson]]></wp:post_type>
+  <category domain="mpcs-course-categories" nicename="v-abschluss"><![CDATA[Verkauf Abschluss]]></category>
+</item>
+</channel>
+</rss>`;
+
+const coursesB = `<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0" xmlns:wp="http://wordpress.org/export/1.2/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:dc="http://purl.org/dc/elements/1.1/">
+<channel>
+<wp:wxr_version>1.2</wp:wxr_version>
+<item>
+  <title>Marketing Kurs</title>
+  <content:encoded><![CDATA[]]></content:encoded>
+  <wp:post_id>900</wp:post_id>
+  <wp:post_name><![CDATA[marketing-kurs]]></wp:post_name>
+  <wp:status><![CDATA[publish]]></wp:status>
+  <wp:menu_order>1</wp:menu_order>
+  <wp:post_type><![CDATA[mpcs-course]]></wp:post_type>
+  <category domain="mpcs-course-categories" nicename="m-grundlagen"><![CDATA[Marketing Grundlagen]]></category>
+  <category domain="mpcs-course-categories" nicename="m-fortgeschritten"><![CDATA[Marketing Fortgeschritten]]></category>
+</item>
+<item>
+  <title>Verkaufs Kurs</title>
+  <content:encoded><![CDATA[]]></content:encoded>
+  <wp:post_id>901</wp:post_id>
+  <wp:post_name><![CDATA[verkaufs-kurs]]></wp:post_name>
+  <wp:status><![CDATA[publish]]></wp:status>
+  <wp:menu_order>2</wp:menu_order>
+  <wp:post_type><![CDATA[mpcs-course]]></wp:post_type>
+  <category domain="mpcs-course-categories" nicename="v-grundlagen"><![CDATA[Verkauf Grundlagen]]></category>
+  <category domain="mpcs-course-categories" nicename="v-abschluss"><![CDATA[Verkauf Abschluss]]></category>
+</item>
+</channel>
+</rss>`;
+
+const ST10 = {
+  files: {
+    0: { name: 'Lessons.xml', items: parseXML(lessonsB) },
+    1: { name: 'Courses.xml', items: parseXML(coursesB) },
+  },
+  parentCatName: 'Kurse',
+  mappings: [
+    { src: { type: 'post_type', name: 'mpcs-lesson', fileIdx: '0' }, tgt: { name: 'post', type: 'post_type' } },
+    { src: { type: 'post_type', name: 'mpcs-course', fileIdx: '1' }, tgt: { name: 'parent_category', type: 'category' } },
+    { src: { type: 'taxonomy', name: 'mpcs-course-categories', fileIdx: '0' }, tgt: { name: 'child_category', type: 'category' } },
+  ],
+};
+const r10 = runPipeline(ST10);
+const v10 = validate(r10, ST10);
+console.log('Posts:', r10.posts.length, '| Cats:', r10.cats.length);
+console.log('Lessons:', v10.lessonPosts, '| Mit Kategorie:', v10.assigned);
+console.log('Kategorien-Baum:');
+const parents = r10.cats.filter(c => !c.parentSlug);
+for (const p of parents) {
+  console.log('  -', p.name, '(parent)');
+  for (const c of r10.cats.filter(c => c.parentSlug === p.slug)) {
+    console.log('      -', c.name, '(child)');
+  }
+}
+const ml1 = r10.posts.find(p => p.title === 'Marketing Lektion 1');
+const vl1 = r10.posts.find(p => p.title === 'Verkauf Lektion 1');
+console.log('Marketing L1 -> Kategorien:', ml1.categories.map(c => c.name).join(', '));
+console.log('Verkauf L1 -> Kategorien:', vl1.categories.map(c => c.name).join(', '));
+const okML = ml1.categories.some(c => c.name === 'Marketing Grundlagen') && ml1.categories.some(c => c.name === 'Marketing Kurs');
+const okVL = vl1.categories.some(c => c.name === 'Verkauf Grundlagen') && vl1.categories.some(c => c.name === 'Verkaufs Kurs');
+const noWrongML = !ml1.categories.some(c => c.name === 'Verkaufs Kurs');
+const noWrongVL = !vl1.categories.some(c => c.name === 'Marketing Kurs');
+if (okML && okVL && noWrongML && noWrongVL && parents.length === 2) {
+  console.log('OK: 2 Parents, jede Lektion korrekt unter ihrem Kurs einsortiert');
+} else {
+  console.log('FAIL:');
+  if (!okML) console.log('  - Marketing L1 fehlt Marketing-Kategorien');
+  if (!okVL) console.log('  - Verkauf L1 fehlt Verkauf-Kategorien');
+  if (!noWrongML) console.log('  - Marketing L1 ist faelschlich unter Verkaufs Kurs');
+  if (!noWrongVL) console.log('  - Verkauf L1 ist faelschlich unter Marketing Kurs');
+  if (parents.length !== 2) console.log('  - Erwartet 2 Parents, gefunden ' + parents.length);
+}
 
 console.log('\n=== ALLE TESTS DURCHGELAUFEN ===');

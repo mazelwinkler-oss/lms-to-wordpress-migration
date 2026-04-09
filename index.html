@@ -672,14 +672,15 @@ function autoMap() {
   pt = findPT('memberpressproduct') || findPT('wg_angebot');
   if (pt) { ST.mappings.push({ src: { type:'post_type', name:pt.name, fileIdx:pt.fileIdx }, tgt: { name:'wg_angebot', type:'post_type' }}); count++; }
 
-  // 3. mpcs-course → child_category (sections become categories)
+  // 3. mpcs-course → parent_category (jeder Kurs wird eine Hauptkategorie)
   pt = findPT('mpcs-course');
-  if (pt) { ST.mappings.push({ src: { type:'post_type', name:'mpcs-course', fileIdx:pt.fileIdx }, tgt: { name:'child_category', type:'category' }}); count++; }
+  if (pt) { ST.mappings.push({ src: { type:'post_type', name:'mpcs-course', fileIdx:pt.fileIdx }, tgt: { name:'parent_category', type:'category' }}); count++; }
 
-  // 4. mpcs-course-categories → parent_category
+  // 4. mpcs-course-categories → child_category (Sektionen werden Unterkategorien)
   let tx = findTax('mpcs-course-categories');
-  if (tx) { ST.mappings.push({ src: { type:'taxonomy', name:'mpcs-course-categories', fileIdx:tx.fileIdx }, tgt: { name:'parent_category', type:'category' }}); count++; }
-  ST.parentCatName = 'Etappen';
+  if (tx) { ST.mappings.push({ src: { type:'taxonomy', name:'mpcs-course-categories', fileIdx:tx.fileIdx }, tgt: { name:'child_category', type:'category' }}); count++; }
+  // Fallback-Name nur relevant, wenn kein Course als Parent gefunden wurde
+  ST.parentCatName = 'Kurse';
 
   // 5. _mpcs_lesson_section_id → section_join
   let mk = findMeta('_mpcs_lesson_section_id');
@@ -978,36 +979,79 @@ function runPipeline() {
 
   const ptMaps = mappings.filter(m => m.tgt.type === 'post_type');
   const catMap = mappings.find(m => m.tgt.name === 'child_category');
+  const parentMap = mappings.find(m => m.tgt.name === 'parent_category');
   const joinMap = mappings.find(m => m.tgt.name === 'section_join');
   const extractMap = mappings.find(m => m.tgt.name === 'extract_chained_quiz');
 
   // === BUILD CATEGORIES ===
+  // Zwei Modelle werden unterstützt:
+  //   Modell A (alt): parentCatName ist ein einzelner manueller String ("Etappen"),
+  //                   child_category-Mapping erzeugt die Unterkategorien.
+  //   Modell B (neu): parent_category ist als post_type gemappt (z.B. mpcs-course),
+  //                   jeder Course-Post wird zu einem eigenen Parent. Children werden
+  //                   ihrem Parent über Taxonomy-Übereinstimmung zugeordnet.
   const cats = [];
   let catId = 100001;
+  const parentCats = []; // Liste aller Parent-Kategorien
 
-  // Parent category
+  // === MODELL B: parent_category aus post_type ===
+  if (parentMap && parentMap.src.type === 'post_type') {
+    const parentItems = allItems.filter(i => i.postType === parentMap.src.name);
+    for (const it of parentItems) {
+      const pc = {
+        termId: catId++,
+        name: it.title,
+        slug: it.slug || slug(it.title),
+        parentSlug: '',
+        _srcId: String(it.postId),
+        _ownTaxSlugs: it.taxonomies.map(t => t.slug),
+      };
+      cats.push(pc);
+      parentCats.push(pc);
+    }
+  }
+
+  // === MODELL A: parent_category als manueller String ===
+  // Wird genutzt, wenn kein post_type-basierter parent vorhanden ist und es children gibt
   let parentCat = null;
-  if (catMap) {
+  if (parentCats.length === 0 && catMap) {
     const pName = ST.parentCatName || 'Etappen';
     parentCat = { termId: catId++, name: pName, slug: slug(pName), parentSlug: '' };
     cats.push(parentCat);
+    parentCats.push(parentCat);
   }
 
-  // Child categories from post types (mpcs-course → child categories)
+  // === CHILD CATEGORIES ===
   if (catMap) {
     const src = catMap.src;
     if (src.type === 'post_type') {
+      // mpcs-course post items werden zu childs (Modell A)
       const items = allItems.filter(i => i.postType === src.name);
       for (const it of items) {
-        cats.push({ termId: catId++, name: it.title, slug: it.slug || slug(it.title), parentSlug: parentCat?.slug || '', _srcId: String(it.postId) });
+        // Standard: erster Parent
+        let pSlug = parentCats[0]?.slug || '';
+        // Wenn mehrere Parents existieren, suche denjenigen, der dieses Item als Taxonomy hat
+        if (parentCats.length > 1) {
+          const ownerParent = parentCats.find(p => p._ownTaxSlugs && it.taxonomies.some(tx => p._ownTaxSlugs.includes(tx.slug)));
+          if (ownerParent) pSlug = ownerParent.slug;
+        }
+        cats.push({ termId: catId++, name: it.title, slug: it.slug || slug(it.title), parentSlug: pSlug, _srcId: String(it.postId) });
       }
     } else if (src.type === 'taxonomy') {
+      // taxonomy terms werden zu childs (Modell B)
       const seen = new Set();
       for (const it of allItems) {
         for (const tx of it.taxonomies) {
           if (tx.taxonomy === src.name && !seen.has(tx.slug)) {
             seen.add(tx.slug);
-            cats.push({ termId: catId++, name: tx.term, slug: tx.slug, parentSlug: parentCat?.slug || '', _taxSlug: tx.slug });
+            // Standard: erster Parent
+            let pSlug = parentCats[0]?.slug || '';
+            // Wenn mehrere Parents existieren, suche denjenigen, der diesen Term hat
+            if (parentCats.length > 1) {
+              const ownerParent = parentCats.find(p => p._ownTaxSlugs && p._ownTaxSlugs.includes(tx.slug));
+              if (ownerParent) pSlug = ownerParent.slug;
+            }
+            cats.push({ termId: catId++, name: tx.term, slug: tx.slug, parentSlug: pSlug, _taxSlug: tx.slug });
           }
         }
       }
@@ -1028,7 +1072,7 @@ function runPipeline() {
 
   // Channel-level terms aus allen Files sammeln
   // Diese erlauben das Mappen einer term_id auf einen term_slug, der dann
-  // ueber taxSlugToCat zu einer Kategorie aufgeloest werden kann.
+  // über taxSlugToCat zu einer Kategorie aufgelöst werden kann.
   const termIdToSlug = {}; // term_id → term_slug (alle Files, alle Taxonomien)
   for (const fd of Object.values(ST.files)) {
     const ts = fd.items?._terms || [];
@@ -1038,6 +1082,13 @@ function runPipeline() {
       if (t.termId && taxSlugToCat[t.slug]) termIdToCat[String(t.termId)] = taxSlugToCat[t.slug];
     }
   }
+
+  // Helper: für ein child finde den passenden Parent (in cats)
+  // Funktioniert für beide Modelle - Modell A hat nur einen Parent, Modell B mehrere.
+  const findParentFor = (childCat) => {
+    if (!childCat || !childCat.parentSlug) return null;
+    return cats.find(c => c.slug === childCat.parentSlug) || null;
+  };
 
   // === TRANSFORM POSTS ===
   const posts = [];
@@ -1126,7 +1177,14 @@ function runPipeline() {
               }
               // Strategy 4: Create missing category from section item
               if (!mc && secItem.title) {
-                const newCat = { termId: catId++, name: secItem.title, slug: secItem.slug || slug(secItem.title), parentSlug: parentCat?.slug || '', _srcId: String(secItem.postId) };
+                // Finde passenden Parent: bei mehreren Parents über Taxonomy-Match,
+                // sonst ersten Parent als Fallback
+                let pSlugForNew = parentCats[0]?.slug || '';
+                if (parentCats.length > 1) {
+                  const owner = parentCats.find(p => p._ownTaxSlugs && secItem.taxonomies.some(tx => p._ownTaxSlugs.includes(tx.slug)));
+                  if (owner) pSlugForNew = owner.slug;
+                }
+                const newCat = { termId: catId++, name: secItem.title, slug: secItem.slug || slug(secItem.title), parentSlug: pSlugForNew, _srcId: String(secItem.postId) };
                 cats.push(newCat);
                 secIdToCat[String(secItem.postId)] = newCat;
                 slugToCat[newCat.slug] = newCat;
@@ -1153,21 +1211,19 @@ function runPipeline() {
 
           if (mc) {
             post.categories.push({ name: mc.name, slug: mc.slug });
-            if (mc.parentSlug && parentCat) {
-              post.categories.push({ name: parentCat.name, slug: parentCat.slug });
-            }
+            const pc = findParentFor(mc);
+            if (pc) post.categories.push({ name: pc.name, slug: pc.slug });
           } else {
             post._unresolved = secId;
           }
         } else {
-          // Kein _mpcs_lesson_section_id → trotzdem versuchen, ueber lesson taxonomies zu mappen
+          // Kein _mpcs_lesson_section_id → trotzdem versuchen, über lesson taxonomies zu mappen
           for (const tx of item.taxonomies) {
             const mc = taxSlugToCat[tx.slug] || slugToCat[tx.slug] || nameToCat[tx.term];
             if (mc) {
               post.categories.push({ name: mc.name, slug: mc.slug });
-              if (mc.parentSlug && parentCat) {
-                post.categories.push({ name: parentCat.name, slug: parentCat.slug });
-              }
+              const pc = findParentFor(mc);
+              if (pc) post.categories.push({ name: pc.name, slug: pc.slug });
               break;
             }
           }
@@ -1178,8 +1234,9 @@ function runPipeline() {
           const mc = taxSlugToCat[tx.slug] || slugToCat[tx.slug] || nameToCat[tx.term];
           if (mc && !post.categories.some(c => c.slug === mc.slug)) {
             post.categories.push({ name: mc.name, slug: mc.slug });
-            if (mc.parentSlug && parentCat) {
-              post.categories.push({ name: parentCat.name, slug: parentCat.slug });
+            const pc = findParentFor(mc);
+            if (pc && !post.categories.some(c => c.slug === pc.slug)) {
+              post.categories.push({ name: pc.name, slug: pc.slug });
             }
           }
         }
@@ -1233,14 +1290,18 @@ function runPipeline() {
       catSlugUsed[c.slug] = true;
     }
   }
-  // Wenn Cat-Slugs umbenannt wurden, parent-Refs in childs nachziehen
+  // Wenn Cat-Slugs umbenannt wurden, parent-Refs in childs nachziehen.
+  // Nutzt eine Name-Map, weil parentSlug ursprünglich auf den nicht-deduplizierten
+  // Slug zeigte. Funktioniert für Modell A (1 Parent) und Modell B (mehrere Parents).
   if (dupeCatsFixed) {
-    const slugByName = {};
-    for (const c of cats) slugByName[c.name] = c.slug;
-    if (parentCat) {
-      for (const c of cats) {
-        if (c.parentSlug && c !== parentCat) c.parentSlug = parentCat.slug;
-      }
+    const nameToSlugAfterDedupe = {};
+    for (const c of cats) nameToSlugAfterDedupe[c.name] = c.slug;
+    // Hole für jedes child den name des originalen Parents und schreibe den neuen Slug
+    for (const c of cats) {
+      if (!c.parentSlug) continue;
+      // Finde den originalen Parent über parentSlug (= nicht-deduplizierter slug)
+      const origParent = parentCats.find(p => slug(p.name) === c.parentSlug || p.slug === c.parentSlug);
+      if (origParent) c.parentSlug = origParent.slug;
     }
   }
 

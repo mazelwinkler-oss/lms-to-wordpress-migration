@@ -1,8 +1,8 @@
 {
   "version": 1,
   "name": "Auto-Mapping (MemberPress \u2192 WordPress)",
-  "description": "Standard-Vorlage fuer den Umzug von MemberPress nach WordPress. Identisch mit dem 'Alles automatisch zuordnen'-Knopf in der App. In Schritt 2 'Vorlage aus Datei hochladen' klicken und diese Datei waehlen. Hinweis: Der Wert von fileIdx wird beim Laden ignoriert; die Pipeline durchsucht alle hochgeladenen Dateien nach den jeweiligen Feldern.",
-  "parentCatName": "Etappen",
+  "description": "Standard-Vorlage f\u00fcr den Umzug von MemberPress nach WordPress. Identisch mit dem 'Alles automatisch zuordnen'-Knopf in der App. In Schritt 2 'Vorlage aus Datei hochladen' klicken und diese Datei w\u00e4hlen. Hinweis: Der Wert von fileIdx wird beim Laden ignoriert; die Pipeline durchsucht alle hochgeladenen Dateien nach den jeweiligen Feldern. Kategorie-Hierarchie: jeder mpcs-course wird zu einer Hauptkategorie, jede mpcs-course-categories Sektion zu einer Unterkategorie unter ihrem Kurs.",
+  "parentCatName": "Kurse",
   "mappings": [
     {
       "src": { "type": "post_type", "name": "mpcs-lesson", "fileIdx": "0" },
@@ -14,11 +14,11 @@
     },
     {
       "src": { "type": "post_type", "name": "mpcs-course", "fileIdx": "0" },
-      "tgt": { "name": "child_category", "type": "category" }
+      "tgt": { "name": "parent_category", "type": "category" }
     },
     {
       "src": { "type": "taxonomy", "name": "mpcs-course-categories", "fileIdx": "0" },
-      "tgt": { "name": "parent_category", "type": "category" }
+      "tgt": { "name": "child_category", "type": "category" }
     },
     {
       "src": { "type": "meta", "name": "_mpcs_lesson_section_id", "fileIdx": "0", "postType": "mpcs-lesson" },
