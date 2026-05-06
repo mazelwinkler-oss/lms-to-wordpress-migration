@@ -187,6 +187,7 @@ tr:hover td { background: rgba(255,255,255,0.02); }
   <header>
     <h1>Kursinhalte <span>&rarr;</span> WordPress <span>Umzugs-Helfer</span></h1>
     <p>In 4 Schritten von der alten Plattform zur neuen WordPress-Seite</p>
+    <p style="font-size:0.7rem;color:var(--text3);margin-top:0.3rem;">Version 2.1 &mdash; Section-ID Heuristik aktiv</p>
   </header>
 
   <div class="card" style="background:linear-gradient(135deg,rgba(108,138,255,0.08),rgba(74,222,128,0.08));border:1px solid rgba(108,138,255,0.3);">
@@ -240,6 +241,13 @@ tr:hover td { background: rgba(255,255,255,0.02); }
         <strong>&#9889; Empfehlung:</strong> Lass den Helfer alles automatisch zuordnen. Das funktioniert in 99% der Fälle und du musst nichts wissen.
         <div class="gap" style="margin-top:0.5rem;">
           <button class="btn btn-g" id="btn-auto-map">&#10003; Alles automatisch zuordnen</button>
+        </div>
+        <div style="margin-top:0.8rem;">
+          <label style="display:block; font-size:0.8rem; color:var(--text2); margin-bottom:0.3rem;">
+            <strong>Optional:</strong> Neue Domain für den Live-Shop (ersetzt alte Preview-/Staging-URLs in den Inhalten)
+          </label>
+          <input type="text" id="inp-base-url" placeholder="z.B. https://www.webgefaehrte.de" style="width:100%; max-width:420px; padding:0.4rem 0.6rem; font-size:0.82rem; background:var(--bg); border:1px solid var(--bg4); border-radius:4px; color:var(--text);">
+          <div style="font-size:0.72rem; color:var(--text3); margin-top:0.2rem;">Leer lassen, wenn keine URLs ersetzt werden sollen.</div>
         </div>
       </div>
       <p class="hint" style="margin-top:1rem;"><strong>Falls du etwas selbst zuordnen willst:</strong> In der linken Spalte stehen die Inhalte aus deinem alten System (orange). In der rechten Spalte stehen die Plätze in WordPress (grün). Du nimmst einfach einen orangen Eintrag mit der Maus, ziehst ihn nach rechts auf den passenden grünen Platz und lässt los. Fertig.</p>
@@ -357,6 +365,7 @@ const ST = {
   detected: null,               // auto-detected source structure
   mappings: [],                 // [{ src:{type,name,fileIdx,postType}, tgt:{name,type} }]
   parentCatName: 'Etappen',    // configurable parent category name
+  normalizeBaseUrl: '',         // optional: alle alten Preview-/Staging-Domains durch diese ersetzen
   customTargets: [],            // user-added target fields [{name, type:'meta'}]
   processes: {},                // id -> { name, mappings[], parentCatName, customTargets }
   activeProcess: null,          // loaded process id
@@ -627,6 +636,7 @@ function detect() {
 const WP_TARGETS = [
   { group: '1. Was wird zu was?', items: [
     { name: 'post', type: 'Beitrag', desc: 'Hierhin gehören deine Lektionen (Lerninhalte). Sie werden später ganz normale WordPress-Beiträge.' },
+    { name: 'page', type: 'Seite', desc: 'Hierhin gehören deine WordPress-Seiten (Pages). Sie werden 1:1 als Pages übernommen — z.B. Impressum, Datenschutz, Über-uns.' },
     { name: 'wg_angebot', type: 'Angebot', desc: 'Hierhin gehören deine Angebote oder Produkte (z.B. Premium-Mitgliedschaften).' },
   ]},
   { group: '2. Kategorien & Sektionen', items: [
@@ -672,6 +682,14 @@ function autoMap() {
   // 2. memberpressproduct OR wg_angebot → wg_angebot
   pt = findPT('memberpressproduct') || findPT('wg_angebot');
   if (pt) { ST.mappings.push({ src: { type:'post_type', name:pt.name, fileIdx:pt.fileIdx }, tgt: { name:'wg_angebot', type:'post_type' }}); count++; }
+
+  // 2b. page → page (WordPress-Seiten 1:1 übernehmen)
+  pt = findPT('page');
+  if (pt) { ST.mappings.push({ src: { type:'post_type', name:'page', fileIdx:pt.fileIdx }, tgt: { name:'page', type:'post_type' }}); count++; }
+
+  // 2c. post → post (falls die Quell-XML bereits einen WordPress-Post-Typ "post" enthält)
+  pt = findPT('post');
+  if (pt) { ST.mappings.push({ src: { type:'post_type', name:'post', fileIdx:pt.fileIdx }, tgt: { name:'post', type:'post_type' }}); count++; }
 
   // 3. mpcs-course → parent_category (jeder Kurs wird eine Hauptkategorie)
   pt = findPT('mpcs-course');
@@ -870,22 +888,39 @@ function renderDnD() {
 
   // === ATTACH EVENTS ===
   // Drag from source
+  // _drag wird in dragstart gesetzt, im erfolgreichen drop ausgelesen + null gesetzt.
+  // dragend setzt nur opacity zurück und macht nur als Fallback _drag = null,
+  // wenn der drop nicht stattfand (sonst würde dragend gegen drop racen und das
+  // mapping wieder zerstören → "springt zurück"-Effekt im UI).
   srcEl.querySelectorAll('.src-item:not(.used)').forEach(el => {
     el.addEventListener('dragstart', e => {
       _drag = { type: el.dataset.t, name: el.dataset.n, fileIdx: el.dataset.f, postType: el.dataset.pt || '' };
       el.style.opacity = '0.4';
-      e.dataTransfer.effectAllowed = 'link';
+      // 'copy' (statt 'link') ist robuster gegenüber Browsern, die 'link'
+      // ablehnen und damit die HTML5-"snap-back"-Animation auslösen.
+      e.dataTransfer.effectAllowed = 'copy';
+      try { e.dataTransfer.setData('text/plain', el.dataset.n); } catch (_) {}
     });
-    el.addEventListener('dragend', () => { el.style.opacity = ''; _drag = null; });
+    el.addEventListener('dragend', () => {
+      el.style.opacity = '';
+      // _drag wird vom drop-Handler bereits geleert. Hier nur defensiv freigeben,
+      // FALLS kein drop stattfand (User außerhalb losgelassen).
+      // Verzögert, damit drop seine Arbeit definitiv fertig hat.
+      setTimeout(() => { _drag = null; }, 0);
+    });
   });
 
   // Drop on target
   tgtEl.querySelectorAll('.tgt-slot').forEach(el => {
-    el.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'link'; el.classList.add('drag-hover'); });
+    // dragenter mit preventDefault: manche Browser akzeptieren den Drop sonst nicht
+    el.addEventListener('dragenter', e => { e.preventDefault(); });
+    el.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; el.classList.add('drag-hover'); });
     el.addEventListener('dragleave', () => el.classList.remove('drag-hover'));
     el.addEventListener('drop', e => {
-      e.preventDefault(); el.classList.remove('drag-hover');
-      if (!_drag) return;
+      e.preventDefault();
+      e.stopPropagation();
+      el.classList.remove('drag-hover');
+      if (!_drag) { toast('Drag-Vorgang abgebrochen', 't-err'); return; }
       const tn = el.dataset.tn, tt = el.dataset.tt;
       // Remove any existing mapping for this target
       ST.mappings = ST.mappings.filter(m => m.tgt.name !== tn);
@@ -893,7 +928,7 @@ function renderDnD() {
       _drag = null;
       renderDnD();
       renderPairs();
-      toast(_drag ? '' : 'Zuordnung erstellt', 't-ok');
+      toast('Zuordnung erstellt: ' + tn, 't-ok');
     });
   });
 
@@ -1307,6 +1342,92 @@ function runPipeline() {
         }
       }
 
+      // === GAP 2 — Lesson-Category-Fallback ===
+      // Auch wenn keine Section auflösbar war: mindestens den Parent-Course
+      // als Kategorie zuweisen. Lessons ohne Kategorie sind im WordPress-Import
+      // unsichtbar in der Kategorie-Navigation.
+      if (tgtPT === 'post' && post.categories.length === 0 && parentCats.length > 0) {
+        // Welcher Parent? Wenn Lesson eine Course-Taxonomy hat, nimm den; sonst ersten.
+        let pCat = parentCats[0];
+        for (const tx of item.taxonomies) {
+          const owner = parentCats.find(p => p._ownTaxSlugs && p._ownTaxSlugs.includes(tx.slug));
+          if (owner) { pCat = owner; break; }
+        }
+        post.categories.push({ name: pCat.name, slug: pCat.slug });
+      }
+
+      // === GAP 5 — Product-Categories cleanup ===
+      // wg_angebot soll keine Course-/Section-Kategorien tragen. Wenn der User
+      // eine "Angebote"-Kategorie definiert hat, nur diese behalten.
+      if (tgtPT === 'wg_angebot') {
+        const angeboteCat = cats.find(c => c.name === 'Angebote' || c.slug === 'angebote');
+        post.categories = angeboteCat ? [{ name: angeboteCat.name, slug: angeboteCat.slug }] : [];
+      }
+
+      // === GAP 3 — wg_angebot defaults ===
+      // Pflichtfelder für das Angebots-Template, falls aus dem Quell-System nicht gemappt.
+      if (tgtPT === 'wg_angebot') {
+        if (!post.meta.mehrwertsteuer) post.meta.mehrwertsteuer = '19';
+        if (!post.meta.type) post.meta.type = 'abo';
+        if (!post.meta.zahlungsform) post.meta.zahlungsform = 'rechnung';
+        if (!post.meta.renewal) post.meta.renewal = 'keine';
+      }
+
+      // === GAP 4 — Dynamic-Field-Meta für Lessons (GenerateBlocks) ===
+      if (tgtPT === 'post') {
+        const c = post.content || '';
+        // wg_video_title: erste H2/H3 oder erste nicht-leere Zeile, Fallback: title
+        if (!post.meta.wg_video_title) {
+          let vt = '';
+          const hMatch = c.match(/<(h2|h3)[^>]*>([\s\S]*?)<\/\1>/i);
+          if (hMatch) {
+            vt = hMatch[2].replace(/<[^>]+>/g, '').trim();
+          } else {
+            const firstLine = c.replace(/<[^>]+>/g, '').split(/\r?\n/).map(s => s.trim()).find(s => s);
+            if (firstLine) vt = firstLine.substring(0, 120);
+          }
+          post.meta.wg_video_title = vt || post.title;
+        }
+        // wg_spickzettel_title: Zeile mit "Check", "Übung" oder "Aufgabe"
+        if (!post.meta.wg_spickzettel_title) {
+          const plainLines = c.replace(/<[^>]+>/g, '\n').split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+          const hit = plainLines.find(s => /(check|übung|uebung|aufgabe)/i.test(s));
+          post.meta.wg_spickzettel_title = hit ? hit.substring(0, 120) : '';
+        }
+        // wg_besenwagen_intro: Text vor dem Quiz-Shortcode
+        if (!post.meta.wg_besenwagen_intro) {
+          const orig = item.content || '';
+          const qIdx = orig.search(/\[chained-quiz/i);
+          if (qIdx > 0) {
+            const before = orig.substring(0, qIdx).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+            post.meta.wg_besenwagen_intro = before.substring(0, 280);
+          }
+        }
+        // wg_besenwagen_duration: Default
+        if (!post.meta.wg_besenwagen_duration && post.meta.wg_besenwagen_code) {
+          post.meta.wg_besenwagen_duration = '5 Fragen';
+        }
+      }
+
+      // === GAP 6 — URL-Normalisierung ===
+      // Domain-Wechsel (alte Preview/Staging-URLs durch finale BASE_URL ersetzen).
+      // Pfade bleiben erhalten, nur die Domains werden ausgetauscht.
+      if (ST.normalizeBaseUrl && ST.normalizeBaseUrl.trim()) {
+        const baseUrl = ST.normalizeBaseUrl.trim().replace(/\/+$/, '');
+        const oldDomains = [
+          'seo-sharing-system.de',
+          'webgefaehrte.de',
+          'webgefaehrten.de',
+        ];
+        // Plus alle *.raidboxes.io Preview-Hosts
+        const re = new RegExp('https?:\\/\\/(?:' + oldDomains.map(d => d.replace(/\./g, '\\.')).join('|') + '|[a-z0-9-]+\\.myraidbox\\.de|[a-z0-9-]+\\.raidboxes\\.io)', 'gi');
+        post.content = post.content.replace(re, baseUrl);
+        // auch in meta-Werten
+        for (const [k, v] of Object.entries(post.meta)) {
+          if (typeof v === 'string') post.meta[k] = v.replace(re, baseUrl);
+        }
+      }
+
       posts.push(post);
     }
   }
@@ -1632,6 +1753,13 @@ function init() {
   // Auto-mapping button
   $('btn-auto-map').onclick = () => autoMap();
 
+  // BASE_URL Eingabefeld (GAP 6: URL-Normalisierung)
+  const baseUrlInp = $('inp-base-url');
+  if (baseUrlInp) {
+    baseUrlInp.value = ST.normalizeBaseUrl || '';
+    baseUrlInp.oninput = () => { ST.normalizeBaseUrl = baseUrlInp.value.trim(); };
+  }
+
   // Upload slot controls
   $('btn-add-slot').onclick = () => { ST.slots++; renderUpload(); };
   $('btn-rm-slot').onclick = () => { if (ST.slots > 1) { delete ST.files[ST.slots - 1]; ST.slots--; renderUpload(); } };
@@ -1641,7 +1769,7 @@ function init() {
     const name = $('proc-name').value.trim();
     if (!name) { toast('Bitte Prozess-Name eingeben', 't-err'); return; }
     const id = name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-    ST.processes[id] = { name, mappings: JSON.parse(JSON.stringify(ST.mappings)), parentCatName: ST.parentCatName, customTargets: JSON.parse(JSON.stringify(ST.customTargets)) };
+    ST.processes[id] = { name, mappings: JSON.parse(JSON.stringify(ST.mappings)), parentCatName: ST.parentCatName, normalizeBaseUrl: ST.normalizeBaseUrl, customTargets: JSON.parse(JSON.stringify(ST.customTargets)) };
     ST.activeProcess = id;
     saveProcs();
     toast('Prozess "' + name + '" gespeichert!', 't-ok');
@@ -1658,6 +1786,7 @@ function init() {
       created: new Date().toISOString(),
       name: $('proc-name').value || 'mapping',
       parentCatName: ST.parentCatName || 'Etappen',
+      normalizeBaseUrl: ST.normalizeBaseUrl || '',
       mappings: ST.mappings,
     };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
@@ -1684,12 +1813,16 @@ function init() {
         }
         ST.mappings = data.mappings;
         if (data.parentCatName) ST.parentCatName = data.parentCatName;
+        if (data.normalizeBaseUrl !== undefined) ST.normalizeBaseUrl = data.normalizeBaseUrl;
         if (data.name) $('proc-name').value = data.name;
         renderDnD();
         renderPairs();
         // parentCatName-Input nachziehen, falls vorhanden
         const pInp = document.querySelector('[data-key="parentCatName"]');
         if (pInp) pInp.value = ST.parentCatName;
+        // BASE_URL-Input nachziehen
+        const bInp = $('inp-base-url');
+        if (bInp) bInp.value = ST.normalizeBaseUrl || '';
         toast(data.mappings.length + ' Zuordnungen aus Datei geladen', 't-ok');
       } catch (err) {
         toast('Fehler beim Laden: ' + err.message, 't-err');
