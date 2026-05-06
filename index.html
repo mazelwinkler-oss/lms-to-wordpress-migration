@@ -98,6 +98,16 @@ header p { color: var(--text2); font-size: 0.82rem; }
 .src-item .preview { font-size: 0.62rem; color: var(--text3); display: block; margin-top: 2px; font-style: italic; white-space: normal; line-height: 1.3; max-height: 2.6em; overflow: hidden; }
 .src-item { flex-wrap: wrap; }
 .src-item .row1 { display: flex; align-items: center; gap: 0.5rem; width: 100%; }
+/* "Brauchst du wahrscheinlich nicht" — einklappbar, kompakter, ausgegraut */
+.grp-ignorable { background: rgba(255,255,255,0.02); border: 1px solid var(--bg4); border-radius: var(--radius); padding: 0.4rem 0.6rem; margin-bottom: 0.6rem; }
+.grp-ignorable[open] { padding-bottom: 0.6rem; }
+.grp-ignorable-title { cursor: pointer; border-bottom: none !important; margin-bottom: 0 !important; color: var(--text3); list-style: revert; }
+.grp-ignorable-title:hover { color: var(--text2); }
+.grp-ignorable-hint { color: var(--text3); font-weight: 400; font-style: italic; opacity: 0.7; }
+.grp-ignorable-note { font-size: 0.7rem; line-height: 1.5; color: var(--text3); padding: 0.4rem 0.5rem; margin: 0.4rem 0 0.5rem 0; border-left: 2px solid var(--bg4); }
+.src-item-dim { opacity: 0.55; padding: 0.3rem 0.6rem; font-size: 0.74rem; background: rgba(255,255,255,0.02); border-color: rgba(255,255,255,0.08); color: var(--text2); }
+.src-item-dim:hover { opacity: 0.85; transform: translateX(2px); }
+.src-item-dim .tag { background: rgba(255,255,255,0.05); }
 .mapping-guide { background: var(--bg3); border: 1px solid var(--bg4); border-radius: var(--radius); padding: 0.75rem 1rem; margin-bottom: 0.75rem; font-size: 0.78rem; line-height: 1.6; color: var(--text2); }
 .mapping-guide strong { color: var(--accent); }
 .mapping-guide .arrow { color: var(--green); font-weight: 700; }
@@ -631,6 +641,63 @@ function detect() {
 }
 
 // ================================================================
+//  KNOWN-IGNORE FIELDS (Plugin-spezifische Konfiguration, kein Inhalt)
+// ================================================================
+// Diese Felder sind MemberPress-Plugin-Internas. Sie steuern Plugin-eigene
+// Funktionen (Zertifikate, Drip-Content, Auth-Texte, Email-Templates etc.)
+// und sind im neuen WordPress-System ohne MemberPress-Plugin nicht nutzbar.
+// Sie werden in der UI in eine eigene "Brauchst du wahrscheinlich nicht"-
+// Spalte verschoben, bleiben aber draggable, falls man sie doch braucht.
+const IGNORE_PATTERNS = [
+  // MemberPress Auth / Display
+  /^_mepr_unauth/,
+  /^_mepr_unauthorized/,
+  // MemberPress Email-Templates
+  /^_mepr_emails$/,
+  // MemberPress Login/Routing/Konfiguration
+  /^_mepr_custom_login_urls/,
+  /^_mepr_thank_you_page/,
+  /^_mepr_disable_address_fields$/,
+  /^_mepr_allow_simultaneous_subscriptions$/,
+  /^_mepr_use_custom_template$/,
+  /^_mepr_custom_template$/,
+  /^_mepr_customize_payment_methods$/,
+  /^_mepr_customize_profile_fields$/,
+  /^_mepr_cannot_purchase_message$/,
+  /^_mepr_access_url$/,
+  /^_mepr_plan_code$/,
+  /^_mepruserroles/,
+  // MemberPress Tax / Renewal / Expire (Abo-Plugin-Logik)
+  /^_mepr_tax_exempt$/,
+  /^_mepr_tax_class$/,
+  /^_mepr_allow_renewal$/,
+  /^_mepr_expire_/,
+  /^_mepr_register_price/,
+  /^_mepr_product_thank_you/,
+  // MemberPress Courses Pro: Zertifikate (eigenes Plugin-System)
+  /^_mpcs_course_certificates_/,
+  // MemberPress Courses Pro: Drip-Content (zeitversetztes Freischalten)
+  /^_mpcs_course_drip_/,
+  /^_mpcs_course_not_dripped/,
+  // MemberPress Courses Pro: UI / Display
+  /^_mpcs_course_accordion/,
+  /^_mpcs_course_show_results$/,
+  /^_mpcs_course_show_answers$/,
+  /^_mpcs_course_require_previous$/,
+  /^_mpcs_course_lesson_title$/,
+  /^_mpcs_course_resources$/,
+  /^_mpcs_course_page_template$/,
+  /^_mpcs_course_sales_url$/,
+  // MemberPress Status / Order (WordPress hat eigene Mechanik)
+  /^_mpcs_lesson_status$/,
+  /^_mpcs_course_status$/,
+  /^_mpcs_course_menu_order$/,
+];
+function isIgnorable(fieldName) {
+  return IGNORE_PATTERNS.some(rx => rx.test(fieldName));
+}
+
+// ================================================================
 //  WORDPRESS TARGET SCHEMA
 // ================================================================
 const WP_TARGETS = [
@@ -791,9 +858,15 @@ function renderDnD() {
     if (!mbp[mk.postType].some(m => m.name === mk.name)) mbp[mk.postType].push(mk);
   }
   for (const [pt, mks] of Object.entries(mbp)) {
-    // Split: fields starting with _ need manual mapping, others are auto-passthrough
-    const manual = mks.filter(mk => mk.name.startsWith('_'));
-    const auto = mks.filter(mk => !mk.name.startsWith('_'));
+    // Drei Kategorien:
+    //   manual    = Felder mit _ Präfix, die NICHT in der Ignore-Liste stehen
+    //               → "Bitte selbst zuordnen" (orange)
+    //   ignorable = Felder mit _ Präfix, die in der Ignore-Liste stehen
+    //               → "Brauchst du wahrscheinlich nicht" (klein, grau, einklappbar)
+    //   auto      = Felder OHNE _ Präfix → Passthrough automatisch
+    const manual    = mks.filter(mk => mk.name.startsWith('_') && !isIgnorable(mk.name));
+    const ignorable = mks.filter(mk => mk.name.startsWith('_') &&  isIgnorable(mk.name));
+    const auto      = mks.filter(mk => !mk.name.startsWith('_'));
 
     // Manual fields first (orange, draggable)
     if (manual.length) {
@@ -809,6 +882,24 @@ function renderDnD() {
         </div>`;
       }
       sh += '</div>';
+    }
+
+    // "Brauchst du wahrscheinlich nicht" — Plugin-Internas, einklappbar
+    if (ignorable.length) {
+      sh += `<details class="grp grp-ignorable"><summary class="grp-title grp-ignorable-title">
+        ⓘ Brauchst du wahrscheinlich nicht (${esc(pt)}) — ${ignorable.length} Plugin-interne Felder
+        <span class="grp-ignorable-hint"> · klick zum Aufklappen</span>
+      </summary>
+      <div class="grp-ignorable-note">Diese Felder steuern alte MemberPress-Plugin-Funktionen (Zertifikate, Drip-Content, Auth-Texte, E-Mail-Templates). Sie werden in WordPress nicht übernommen, falls du sie hier liegen lässt — das ist meistens richtig so, weil das neue System diese Funktionen anders löst. Falls du eines doch brauchst: einfach rüber-ziehen.</div>`;
+      for (const mk of ignorable) {
+        const used = ST.mappings.some(m => m.src.type === 'meta' && m.src.name === mk.name && m.src.postType === pt);
+        const preview = mk.samples.length ? `<span class="preview">Beispiele: ${samp(mk.samples, 30).map(esc).join(', ')}</span>` : '';
+        sh += `<div class="src-item src-item-dim${used?' used':''}" draggable="${!used}" data-t="meta" data-n="${esc(mk.name)}" data-f="${esc(mk.fileIdx)}" data-pt="${esc(pt)}">
+          <div class="row1"><span class="tag">Feld</span><span class="nm">${esc(mk.name)}</span></div>
+          ${preview}
+        </div>`;
+      }
+      sh += '</details>';
     }
 
     // Auto-passthrough fields (green/dimmed, not draggable by default)
