@@ -31,20 +31,34 @@ header p { color: var(--text2); font-size: 0.82rem; }
 
 /* ===== STEPPER ===== */
 .stepper { display: flex; gap: 0; margin-bottom: 1.5rem; border-radius: var(--radius-lg); overflow: hidden; background: var(--bg2); }
-.step-btn { flex: 1; padding: 0.65rem; text-align: center; font-size: 0.8rem; font-weight: 600; color: var(--text3); background: var(--bg2); border: none; border-bottom: 3px solid transparent; transition: 0.2s; }
-.step-btn:hover { color: var(--text2); background: var(--bg3); }
+.step-btn { flex: 1; padding: 0.85rem 0.7rem; text-align: center; font-size: 0.92rem; font-weight: 600; color: var(--text3); background: var(--bg2); border: none; border-bottom: 3px solid transparent; transition: 0.2s; cursor: pointer; }
+.step-btn:hover:not(.locked) { color: var(--text2); background: var(--bg3); }
 .step-btn.active { color: var(--accent); border-bottom-color: var(--accent); background: var(--bg3); }
 .step-btn.done { color: var(--green); }
-.step-btn .n { display: inline-block; width: 1.4rem; height: 1.4rem; line-height: 1.4rem; border-radius: 50%; background: var(--bg4); font-size: 0.7rem; margin-right: 0.3rem; }
-.step-btn.active .n { background: var(--accent); color: #fff; }
 .step-btn.done .n { background: var(--green); color: #000; }
+.step-btn.locked { opacity: 0.4; cursor: not-allowed; }
+.step-btn.locked:hover { background: var(--bg2); }
+.step-btn .n { display: inline-block; width: 1.6rem; height: 1.6rem; line-height: 1.6rem; border-radius: 50%; background: var(--bg4); font-size: 0.8rem; margin-right: 0.4rem; transition: 0.2s; }
+.step-btn.active .n { background: var(--accent); color: #fff; }
+.step-btn.locked .n::after { content: ' 🔒'; font-size: 0.6em; }
+.step-btn.locked .n { font-size: 0; }
+.step-btn.locked .n::before { content: '🔒'; font-size: 0.85rem; }
 
 /* ===== PANELS ===== */
 .panel { display: none; } .panel.show { display: block; }
 .card { background: var(--bg2); border-radius: var(--radius-lg); padding: 1.25rem; margin-bottom: 1rem; border: 1px solid var(--bg3); }
 .card h2 { font-size: 1.05rem; margin-bottom: 0.5rem; }
 .card h3 { font-size: 0.92rem; color: var(--text2); margin-bottom: 0.4rem; }
-.hint { font-size: 0.78rem; color: var(--text3); margin-bottom: 0.75rem; }
+.hint { font-size: 0.88rem; line-height: 1.55; color: var(--text2); margin-bottom: 0.75rem; }
+
+/* Pro-Schritt-Info-Box mit Was / Warum / Tipp */
+.step-intro { background: linear-gradient(135deg, rgba(108,138,255,0.10), rgba(74,222,128,0.05)); border: 1px solid rgba(108,138,255,0.30); border-left: 4px solid var(--accent); border-radius: var(--radius); padding: 1rem 1.2rem; margin-bottom: 1.2rem; }
+.step-intro-row { display: flex; gap: 0.6rem; align-items: flex-start; margin-bottom: 0.5rem; line-height: 1.55; font-size: 0.92rem; }
+.step-intro-row:last-child { margin-bottom: 0; }
+.step-intro-label { font-size: 1.05rem; flex-shrink: 0; width: 1.6rem; text-align: center; }
+.step-intro-text { color: var(--text); }
+.step-intro-text b { color: var(--accent); }
+.step-intro-tip { color: var(--text2); font-style: italic; font-size: 0.86rem; padding-top: 0.3rem; border-top: 1px dashed rgba(108,138,255,0.2); margin-top: 0.4rem; }
 
 /* ===== BUTTONS ===== */
 .btn { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.5rem 1rem; border-radius: var(--radius); font-weight: 600; border: none; font-size: 0.82rem; transition: 0.2s; }
@@ -99,22 +113,25 @@ header p { color: var(--text2); font-size: 0.82rem; }
 .src-item { flex-wrap: wrap; }
 .src-item .row1 { display: flex; align-items: center; gap: 0.5rem; width: 100%; }
 /* Notiz-Block (z.B. Erklaerung im "Brauchst du wahrscheinlich nicht"-Tab) */
-.src-note { font-size: 0.72rem; line-height: 1.5; color: var(--text2); padding: 0.6rem 0.7rem; margin: 0.2rem 0 0.7rem 0; border-left: 3px solid var(--bg4); background: rgba(255,255,255,0.025); border-radius: 0 4px 4px 0; }
+.src-note { font-size: 0.86rem; line-height: 1.55; color: var(--text2); padding: 0.8rem 0.9rem; margin: 0.4rem 0 0.9rem 0; border-left: 3px solid var(--accent); background: rgba(108,138,255,0.06); border-radius: 0 6px 6px 0; }
 .src-note strong { color: var(--text); }
 .src-item-dim { opacity: 0.7; padding: 0.3rem 0.6rem; font-size: 0.74rem; background: rgba(255,255,255,0.02); border-color: rgba(255,255,255,0.08); color: var(--text2); }
 .src-item-dim:hover { opacity: 1; transform: translateX(2px); }
 .src-item-dim .tag { background: rgba(255,255,255,0.05); }
-/* Tab-Navigation oben in der Source-Spalte */
-.src-tabs { display: flex; gap: 4px; padding: 0.4rem 0.4rem 0; background: var(--bg2); border-bottom: 1px solid var(--bg4); flex-wrap: wrap; }
-.src-tab { flex: 1; min-width: 130px; padding: 0.5rem 0.7rem; font-size: 0.72rem; font-weight: 600; text-align: center; cursor: pointer; border: 1px solid transparent; border-bottom: none; border-radius: 4px 4px 0 0; background: transparent; color: var(--text3); transition: 0.15s; user-select: none; line-height: 1.3; }
-.src-tab:hover { color: var(--text2); background: rgba(255,255,255,0.03); }
-.src-tab .src-tab-count { display: inline-block; min-width: 1.4em; padding: 0 0.4em; margin-left: 0.4em; border-radius: 8px; background: var(--bg4); color: var(--text2); font-size: 0.65rem; font-weight: 700; vertical-align: 1px; }
-.src-tab.active { background: var(--bg3); color: var(--text); border-color: var(--bg4); }
+/* Tab-Navigation oben in der Source-Spalte (klickbare Kacheln) */
+.src-tabs { display: flex; gap: 4px; padding: 0.5rem 0.5rem 0; background: var(--bg2); border-bottom: 1px solid var(--bg4); flex-wrap: wrap; }
+.src-tab { flex: 1; min-width: 140px; padding: 0.6rem 0.7rem; font-size: 0.78rem; font-weight: 600; text-align: center; cursor: pointer; border: 1px solid var(--bg4); border-bottom: none; border-radius: 6px 6px 0 0; background: rgba(255,255,255,0.03); color: var(--text2); transition: 0.15s; user-select: none; line-height: 1.35; display: flex; align-items: center; justify-content: center; gap: 0.35rem; }
+.src-tab:hover { color: var(--text); background: rgba(255,255,255,0.07); transform: translateY(-1px); }
+.src-tab .src-tab-icon { font-size: 0.95rem; line-height: 1; }
+.src-tab .src-tab-count { display: inline-block; min-width: 1.4em; padding: 0.05em 0.5em; margin-left: 0.2em; border-radius: 10px; background: var(--bg4); color: var(--text); font-size: 0.7rem; font-weight: 700; vertical-align: 1px; }
+.src-tab.active { background: var(--bg3); color: var(--text); border-color: var(--accent); transform: translateY(0); }
+.src-tab.active::after { content: ''; display: block; position: absolute; }
 /* Tab-Akzent-Farben (dezent, kein Signal-Rot) */
-.src-tab[data-tab="main"].active     { box-shadow: inset 0 -3px 0 0 var(--accent); }
-.src-tab[data-tab="manual"].active   { box-shadow: inset 0 -3px 0 0 var(--orange); }
-.src-tab[data-tab="auto"].active     { box-shadow: inset 0 -3px 0 0 var(--green); }
-.src-tab[data-tab="ignore"].active   { box-shadow: inset 0 -3px 0 0 var(--text3); }
+.src-tab[data-tab="main"].active     { box-shadow: inset 0 -4px 0 0 var(--accent); border-color: var(--accent); }
+.src-tab[data-tab="manual"].active   { box-shadow: inset 0 -4px 0 0 var(--orange); border-color: var(--orange); }
+.src-tab[data-tab="auto"].active     { box-shadow: inset 0 -4px 0 0 var(--green);  border-color: var(--green); }
+.src-tab[data-tab="ignore"].active   { box-shadow: inset 0 -4px 0 0 var(--text3);  border-color: var(--text3); }
+.src-tab[data-tab="main"].active .src-tab-count   { background: var(--accent); color: #fff; }
 .src-tab[data-tab="manual"].active .src-tab-count { background: var(--orange); color: #fff; }
 .src-tab[data-tab="auto"].active .src-tab-count   { background: var(--green); color: #fff; }
 .src-tab[data-tab="ignore"].active .src-tab-count { background: var(--text3); color: var(--bg2); }
@@ -207,7 +224,6 @@ tr:hover td { background: rgba(255,255,255,0.02); }
   <header>
     <h1>Kursinhalte <span>&rarr;</span> WordPress <span>Umzugs-Helfer</span></h1>
     <p>In 4 Schritten von der alten Plattform zur neuen WordPress-Seite</p>
-    <p style="font-size:0.7rem;color:var(--text3);margin-top:0.3rem;">Version 2.1 &mdash; Section-ID Heuristik aktiv</p>
   </header>
 
   <div class="card" style="background:linear-gradient(135deg,rgba(108,138,255,0.08),rgba(74,222,128,0.08));border:1px solid rgba(108,138,255,0.3);">
@@ -230,9 +246,14 @@ tr:hover td { background: rgba(255,255,255,0.02); }
 
   <!-- ===== STEP 1 — FILES ===== -->
   <div class="panel show" id="p0">
+    <div class="step-intro">
+      <div class="step-intro-row"><span class="step-intro-label">📥</span><span class="step-intro-text"><b>Was du jetzt machst:</b> Du lädst die Export-Dateien aus dem alten System hoch. Das sind XML-Dateien, die du dort exportiert hast.</span></div>
+      <div class="step-intro-row"><span class="step-intro-label">❓</span><span class="step-intro-text"><b>Warum:</b> Das Tool muss wissen, was in deinem Kurs steckt — Lektionen, Sektionen, Angebote — bevor es daraus eine WordPress-Datei machen kann.</span></div>
+      <div class="step-intro-tip">💡 <b>Tipp:</b> Meistens sind das 3 Dateien (Lektionen / Sektionen / Angebote). Falls du nur eine hast, reicht eine — das Tool erkennt automatisch, was drin ist. Wenn du mehr brauchst, klick auf „+ Noch ein Datei-Feld hinzufügen".</div>
+    </div>
     <div class="card">
       <h2>Schritt 1: Deine Export-Dateien hochladen</h2>
-      <p class="hint">Hier legst du deine Export-Dateien aus dem alten System ab. Das sind meistens 3 XML-Dateien: eine für die <strong>Lektionen</strong>, eine für die <strong>Sektionen/Etappen</strong> und eine für die <strong>Angebote/Produkte</strong>. Du kannst die Dateien einfach in die grauen Felder ziehen oder draufklicken.</p>
+      <p class="hint">Du kannst die Dateien einfach in die grauen Felder ziehen oder draufklicken.</p>
       <div class="upload-grid" id="upload-grid"></div>
       <div class="gap" style="margin-top:0.75rem;">
         <button class="btn btn-s btn-sm" id="btn-add-slot">+ Noch ein Datei-Feld hinzufügen</button>
@@ -254,6 +275,11 @@ tr:hover td { background: rgba(255,255,255,0.02); }
 
   <!-- ===== STEP 2 — DRAG & DROP MAPPING ===== -->
   <div class="panel" id="p1">
+    <div class="step-intro">
+      <div class="step-intro-row"><span class="step-intro-label">🧩</span><span class="step-intro-text"><b>Was du jetzt machst:</b> Du sagst dem Tool, welche Inhalte aus deinem alten System wo in WordPress landen sollen.</span></div>
+      <div class="step-intro-row"><span class="step-intro-label">❓</span><span class="step-intro-text"><b>Warum:</b> WordPress kennt deine alten Plugin-Begriffe (z.B. „mpcs-lesson", „memberpressproduct") nicht — wir müssen sie übersetzen.</span></div>
+      <div class="step-intro-tip">💡 <b>Tipp:</b> Klick zuerst den grünen Knopf <b>„Alles automatisch zuordnen"</b>. In 99% der Fälle ist danach alles richtig — du musst keinen einzigen Eintrag selbst ziehen und kannst direkt zu Schritt 3 weiter.</div>
+    </div>
     <div class="card">
       <h2>Schritt 2: Was soll wohin gehören?</h2>
       <p class="hint">Hier sagst du dem Helfer, welche Inhalte aus deinem alten System wo in WordPress ankommen sollen. <strong>Am einfachsten:</strong> Klicke einmal auf den grünen Knopf weiter unten — der Helfer macht das automatisch für dich. Falls etwas nicht passt, kannst du es danach noch von Hand korrigieren.</p>
@@ -320,9 +346,14 @@ tr:hover td { background: rgba(255,255,255,0.02); }
 
   <!-- ===== STEP 3 — PREVIEW ===== -->
   <div class="panel" id="p2">
+    <div class="step-intro">
+      <div class="step-intro-row"><span class="step-intro-label">👀</span><span class="step-intro-text"><b>Was du jetzt machst:</b> Du schaust dir einmal an, wie deine Inhalte später in WordPress aussehen werden.</span></div>
+      <div class="step-intro-row"><span class="step-intro-label">❓</span><span class="step-intro-text"><b>Warum:</b> Lieber jetzt einen Fehler bemerken als nach dem Import. Wenn etwas falsch ist, kannst du zurück zu Schritt 2 und korrigieren.</span></div>
+      <div class="step-intro-tip">💡 <b>Tipp:</b> Schau dir vor allem <b>rote Zeilen</b> an — das sind Lektionen, denen das Tool keine Sektion zuordnen konnte. Bei <b>0 Probleme</b> oben ist alles in Ordnung, du kannst zum letzten Schritt weiter.</div>
+    </div>
     <div class="card">
       <h2>Schritt 3: So wird es in WordPress aussehen</h2>
-      <p class="hint">Hier siehst du, wie deine Inhalte in WordPress ankommen werden. Prüfe vor allem die <strong>rot markierten Zeilen</strong> — das sind Lektionen, denen noch keine Sektion zugeordnet werden konnte. Wenn alles passt, gehe zum letzten Schritt.</p>
+      <p class="hint">Hier siehst du, wie deine Inhalte in WordPress ankommen werden.</p>
       <div class="v-bar" id="v-bar"></div>
       <div class="tabs" id="pv-tabs"></div>
       <div id="pv-panels"></div>
@@ -336,9 +367,14 @@ tr:hover td { background: rgba(255,255,255,0.02); }
 
   <!-- ===== STEP 4 — EXPORT ===== -->
   <div class="panel" id="p3">
+    <div class="step-intro">
+      <div class="step-intro-row"><span class="step-intro-label">📦</span><span class="step-intro-text"><b>Was du jetzt machst:</b> Du erstellst die fertige WordPress-Datei und lädst sie auf deinen Computer herunter.</span></div>
+      <div class="step-intro-row"><span class="step-intro-label">❓</span><span class="step-intro-text"><b>Warum:</b> Diese .xml-Datei kannst du in deiner WordPress-Seite unter <em>Werkzeuge → Daten importieren</em> hochladen — sie enthält all deine Inhalte fertig sortiert.</span></div>
+      <div class="step-intro-tip">💡 <b>Tipp:</b> Erst <b>„Datei vorbereiten"</b> klicken (rechnet kurz), dann <b>„Datei herunterladen"</b>. Die Schritt-für-Schritt-Anleitung für den Import in WordPress steht weiter unten.</div>
+    </div>
     <div class="card">
       <h2>Schritt 4: Datei für WordPress herunterladen</h2>
-      <p class="hint">Hier siehst du eine Zusammenfassung dessen, was importiert wird. Klicke dann auf <strong>"Datei vorbereiten"</strong> und danach auf <strong>"Datei herunterladen"</strong>. Du bekommst eine .xml-Datei, die du in WordPress unter <em>Werkzeuge &rarr; Daten importieren &rarr; WordPress</em> hochladen kannst.</p>
+      <p class="hint">Hier siehst du eine Zusammenfassung dessen, was importiert wird.</p>
       <div class="stat-grid" id="exp-stats"></div>
       <div class="cfg">
         <label>Adresse deiner WordPress-Seite:</label>
@@ -528,6 +564,7 @@ function doUpload(idx, file) {
       ST.files[idx] = { name: file.name, items };
       toast(file.name + ': ' + items.length + ' Items geladen', 't-ok');
       renderUpload();
+      refreshStepperState();
     } catch(err) { toast('Fehler: ' + err.message, 't-err'); }
   };
   r.readAsText(file);
@@ -858,18 +895,20 @@ function renderDnD() {
 
   // === TAB-NAVIGATION ===
   const tabsCfg = [
-    { id: 'main',   label: 'Inhaltstypen & Sektionen',     count: cntMain },
-    { id: 'manual', label: 'Bitte selbst zuordnen',         count: cntManual },
-    { id: 'auto',   label: 'Wird automatisch mitgenommen',  count: cntAuto },
-    { id: 'ignore', label: 'Brauchst du wahrscheinlich nicht', count: cntIgnore },
+    { id: 'main',   label: 'Inhaltstypen & Sektionen',         count: cntMain,   icon: '🧱' },
+    { id: 'manual', label: 'Bitte selbst zuordnen',            count: cntManual, icon: '✋' },
+    { id: 'auto',   label: 'Wird automatisch mitgenommen',     count: cntAuto,   icon: '✓'  },
+    { id: 'ignore', label: 'Brauchst du wahrscheinlich nicht', count: cntIgnore, icon: 'ⓘ'  },
   ];
   // Wenn aktiver Tab leer ist (z.B. nach Reset), zurueck auf 'main'
   const activeTab = tabsCfg.find(t => t.id === ST.activeSourceTab) || tabsCfg[0];
   if (activeTab.count === 0 && ST.activeSourceTab !== 'main') ST.activeSourceTab = 'main';
 
   tabsEl.innerHTML = tabsCfg.map(t => `
-    <div class="src-tab${ST.activeSourceTab === t.id ? ' active' : ''}" data-tab="${t.id}">
-      ${esc(t.label)}<span class="src-tab-count">${t.count}</span>
+    <div class="src-tab${ST.activeSourceTab === t.id ? ' active' : ''}" data-tab="${t.id}" title="Klick: ${esc(t.label)}">
+      <span class="src-tab-icon">${t.icon}</span>
+      <span>${esc(t.label)}</span>
+      <span class="src-tab-count">${t.count}</span>
     </div>
   `).join('');
 
@@ -1143,6 +1182,7 @@ function renderPairs() {
   c.querySelectorAll('[data-rm2]').forEach(el => {
     el.onclick = () => { ST.mappings = ST.mappings.filter(m => m.tgt.name !== el.dataset.rm2); renderDnD(); renderPairs(); };
   });
+  if (typeof refreshStepperState === 'function') refreshStepperState();
 }
 
 // ================================================================
@@ -1862,16 +1902,54 @@ function renderExport() {
 // ================================================================
 //  NAVIGATION
 // ================================================================
+/**
+ * Prueft, ob ein Schritt erreichbar ist.
+ * Schritt 0 (Upload) ist immer offen.
+ * Schritt 1 (Zuordnen) braucht mindestens eine hochgeladene Datei.
+ * Schritt 2 (Anschauen) braucht mindestens ein Mapping.
+ * Schritt 3 (Herunterladen) braucht eine erfolgreiche Pipeline ohne fail-Validierungen.
+ */
+function canReachStep(step) {
+  if (step <= 0) return true;
+  const hasFiles = Object.values(ST.files || {}).some(f => f && f.items && f.items.length);
+  if (step === 1) return hasFiles;
+  if (step === 2) return hasFiles && (ST.mappings || []).length > 0;
+  if (step === 3) return hasFiles && (ST.mappings || []).length > 0 && ST.validation && ST.validation.fail === 0;
+  return false;
+}
+
+function refreshStepperState() {
+  document.querySelectorAll('.step-btn').forEach((b, i) => {
+    const reachable = canReachStep(i);
+    b.classList.toggle('active', i === ST.step);
+    b.classList.toggle('done', i < ST.step && reachable);
+    b.classList.toggle('locked', !reachable && i !== ST.step);
+    if (!reachable && i !== ST.step) {
+      b.title = i === 1 ? 'Bitte erst eine XML-Datei hochladen.'
+              : i === 2 ? 'Bitte erst eine Zuordnung erstellen (Schritt 2).'
+              : i === 3 ? 'Bitte erst Schritt 3 ohne Fehler durchlaufen.'
+              : '';
+    } else {
+      b.title = '';
+    }
+  });
+}
+
 function goTo(step) {
   if (step < 0 || step > 3) return;
+  if (!canReachStep(step)) {
+    const msg = step === 1 ? 'Bitte erst eine XML-Datei hochladen.'
+              : step === 2 ? 'Bitte erst eine Zuordnung erstellen.'
+              : step === 3 ? 'Bitte erst Schritt 3 ohne Fehler durchlaufen.'
+              : 'Schritt nicht verfuegbar.';
+    toast(msg, 't-err');
+    return;
+  }
   if (step >= 2) {
     try { runPipeline(); } catch(e) { toast('Pipeline-Fehler: ' + e.message, 't-err'); console.error(e); return; }
   }
   ST.step = step;
-  document.querySelectorAll('.step-btn').forEach((b, i) => {
-    b.classList.toggle('active', i === step);
-    b.classList.toggle('done', i < step);
-  });
+  refreshStepperState();
   document.querySelectorAll('.panel').forEach((p, i) => p.classList.toggle('show', i === step));
 
   if (step === 0) { renderUpload(); renderProcs(); }
