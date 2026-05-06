@@ -98,16 +98,26 @@ header p { color: var(--text2); font-size: 0.82rem; }
 .src-item .preview { font-size: 0.62rem; color: var(--text3); display: block; margin-top: 2px; font-style: italic; white-space: normal; line-height: 1.3; max-height: 2.6em; overflow: hidden; }
 .src-item { flex-wrap: wrap; }
 .src-item .row1 { display: flex; align-items: center; gap: 0.5rem; width: 100%; }
-/* "Brauchst du wahrscheinlich nicht" — einklappbar, kompakter, ausgegraut */
-.grp-ignorable { background: rgba(255,255,255,0.02); border: 1px solid var(--bg4); border-radius: var(--radius); padding: 0.4rem 0.6rem; margin-bottom: 0.6rem; }
-.grp-ignorable[open] { padding-bottom: 0.6rem; }
-.grp-ignorable-title { cursor: pointer; border-bottom: none !important; margin-bottom: 0 !important; color: var(--text3); list-style: revert; }
-.grp-ignorable-title:hover { color: var(--text2); }
-.grp-ignorable-hint { color: var(--text3); font-weight: 400; font-style: italic; opacity: 0.7; }
-.grp-ignorable-note { font-size: 0.7rem; line-height: 1.5; color: var(--text3); padding: 0.4rem 0.5rem; margin: 0.4rem 0 0.5rem 0; border-left: 2px solid var(--bg4); }
-.src-item-dim { opacity: 0.55; padding: 0.3rem 0.6rem; font-size: 0.74rem; background: rgba(255,255,255,0.02); border-color: rgba(255,255,255,0.08); color: var(--text2); }
-.src-item-dim:hover { opacity: 0.85; transform: translateX(2px); }
+/* Notiz-Block (z.B. Erklaerung im "Brauchst du wahrscheinlich nicht"-Tab) */
+.src-note { font-size: 0.72rem; line-height: 1.5; color: var(--text2); padding: 0.6rem 0.7rem; margin: 0.2rem 0 0.7rem 0; border-left: 3px solid var(--bg4); background: rgba(255,255,255,0.025); border-radius: 0 4px 4px 0; }
+.src-note strong { color: var(--text); }
+.src-item-dim { opacity: 0.7; padding: 0.3rem 0.6rem; font-size: 0.74rem; background: rgba(255,255,255,0.02); border-color: rgba(255,255,255,0.08); color: var(--text2); }
+.src-item-dim:hover { opacity: 1; transform: translateX(2px); }
 .src-item-dim .tag { background: rgba(255,255,255,0.05); }
+/* Tab-Navigation oben in der Source-Spalte */
+.src-tabs { display: flex; gap: 4px; padding: 0.4rem 0.4rem 0; background: var(--bg2); border-bottom: 1px solid var(--bg4); flex-wrap: wrap; }
+.src-tab { flex: 1; min-width: 130px; padding: 0.5rem 0.7rem; font-size: 0.72rem; font-weight: 600; text-align: center; cursor: pointer; border: 1px solid transparent; border-bottom: none; border-radius: 4px 4px 0 0; background: transparent; color: var(--text3); transition: 0.15s; user-select: none; line-height: 1.3; }
+.src-tab:hover { color: var(--text2); background: rgba(255,255,255,0.03); }
+.src-tab .src-tab-count { display: inline-block; min-width: 1.4em; padding: 0 0.4em; margin-left: 0.4em; border-radius: 8px; background: var(--bg4); color: var(--text2); font-size: 0.65rem; font-weight: 700; vertical-align: 1px; }
+.src-tab.active { background: var(--bg3); color: var(--text); border-color: var(--bg4); }
+/* Tab-Akzent-Farben (dezent, kein Signal-Rot) */
+.src-tab[data-tab="main"].active     { box-shadow: inset 0 -3px 0 0 var(--accent); }
+.src-tab[data-tab="manual"].active   { box-shadow: inset 0 -3px 0 0 var(--orange); }
+.src-tab[data-tab="auto"].active     { box-shadow: inset 0 -3px 0 0 var(--green); }
+.src-tab[data-tab="ignore"].active   { box-shadow: inset 0 -3px 0 0 var(--text3); }
+.src-tab[data-tab="manual"].active .src-tab-count { background: var(--orange); color: #fff; }
+.src-tab[data-tab="auto"].active .src-tab-count   { background: var(--green); color: #fff; }
+.src-tab[data-tab="ignore"].active .src-tab-count { background: var(--text3); color: var(--bg2); }
 .mapping-guide { background: var(--bg3); border: 1px solid var(--bg4); border-radius: var(--radius); padding: 0.75rem 1rem; margin-bottom: 0.75rem; font-size: 0.78rem; line-height: 1.6; color: var(--text2); }
 .mapping-guide strong { color: var(--accent); }
 .mapping-guide .arrow { color: var(--green); font-weight: 700; }
@@ -264,6 +274,7 @@ tr:hover td { background: rgba(255,255,255,0.02); }
       <div class="dnd" id="dnd">
         <div class="dnd-col">
           <div class="dnd-head src" id="src-head">Aus deinem alten System</div>
+          <div class="src-tabs" id="src-tabs"></div>
           <div class="dnd-body" id="src-body"></div>
         </div>
         <div class="dnd-mid">
@@ -377,6 +388,7 @@ const ST = {
   parentCatName: 'Etappen',    // configurable parent category name
   normalizeBaseUrl: '',         // optional: alle alten Preview-/Staging-Domains durch diese ersetzen
   customTargets: [],            // user-added target fields [{name, type:'meta'}]
+  activeSourceTab: 'main',      // 'main' | 'manual' | 'auto' | 'ignore'
   processes: {},                // id -> { name, mappings[], parentCatName, customTargets }
   activeProcess: null,          // loaded process id
   result: null,                 // pipeline output { posts[], categories[] }
@@ -820,99 +832,131 @@ let _drag = null; // current drag data
 function renderDnD() {
   const d = ST.detected;
   if (!d) return;
-  const srcEl = $('src-body'), tgtEl = $('tgt-body');
+  const srcEl = $('src-body'), tgtEl = $('tgt-body'), tabsEl = $('src-tabs');
 
   // Helper: truncate sample values
   const samp = (arr, max=40) => arr.map(s => s.length > max ? s.substring(0,max)+'...' : s);
 
-  // === SOURCE COLUMN ===
-  let sh = '';
-
-  // Post types
-  if (d.postTypes.length) {
-    sh += '<div class="grp"><div class="grp-title">Inhaltstypen — was wurde in deinen Dateien gefunden?</div>';
-    for (const pt of d.postTypes) {
-      const used = ST.mappings.some(m => m.src.type === 'post_type' && m.src.name === pt.name);
-      const hint = pt.hint ? `<span class="desc">${esc(pt.hint)}</span>` : '';
-      const preview = pt.samples.length ? `<span class="preview">Beispiele: "${samp(pt.samples).map(esc).join('", "')}"</span>` : '';
-      sh += `<div class="src-item${used?' used':''}" draggable="${!used}" data-t="post_type" data-n="${esc(pt.name)}" data-f="${esc(pt.fileIdx)}">
-        <div class="row1"><span class="tag">Typ</span><span class="nm">${esc(pt.name)}</span><span class="cnt">${pt.count} Stück</span></div>
-        ${hint}${preview}
-      </div>`;
-    }
-    sh += '</div>';
-  }
-
-  // Taxonomies
-  if (d.taxonomies.length) {
-    sh += '<div class="grp"><div class="grp-title">Kategorien & Sektionen aus deinem alten System</div>';
-    for (const tx of d.taxonomies) {
-      const used = ST.mappings.some(m => m.src.type === 'taxonomy' && m.src.name === tx.name);
-      const hint = tx.hint ? `<span class="desc">${esc(tx.hint)}</span>` : '';
-      const preview = tx.samples.length ? `<span class="preview">Beispiele: ${samp(tx.samples).map(esc).join(', ')}${tx.termCount > tx.samples.length ? ', ...' : ''}</span>` : '';
-      sh += `<div class="src-item${used?' used':''}" draggable="${!used}" data-t="taxonomy" data-n="${esc(tx.name)}" data-f="${esc(tx.fileIdx)}">
-        <div class="row1"><span class="tag">Kat</span><span class="nm">${esc(tx.name)}</span><span class="cnt">${tx.termCount} Stück</span></div>
-        ${hint}${preview}
-      </div>`;
-    }
-    sh += '</div>';
-  }
-
-  // Meta keys grouped by post type, split into manual vs auto
+  // === META-KEYS pro Post-Type aufteilen + Counter berechnen ===
   const mbp = {};
   for (const mk of d.metaKeys) {
     if (!mbp[mk.postType]) mbp[mk.postType] = [];
     if (!mbp[mk.postType].some(m => m.name === mk.name)) mbp[mk.postType].push(mk);
   }
+  let cntManual = 0, cntAuto = 0, cntIgnore = 0;
+  const buckets = {}; // pt -> {manual, auto, ignorable}
   for (const [pt, mks] of Object.entries(mbp)) {
-    // Drei Kategorien:
-    //   manual    = Felder mit _ Präfix, die NICHT in der Ignore-Liste stehen
-    //               → "Bitte selbst zuordnen" (orange)
-    //   ignorable = Felder mit _ Präfix, die in der Ignore-Liste stehen
-    //               → "Brauchst du wahrscheinlich nicht" (klein, grau, einklappbar)
-    //   auto      = Felder OHNE _ Präfix → Passthrough automatisch
     const manual    = mks.filter(mk => mk.name.startsWith('_') && !isIgnorable(mk.name));
     const ignorable = mks.filter(mk => mk.name.startsWith('_') &&  isIgnorable(mk.name));
     const auto      = mks.filter(mk => !mk.name.startsWith('_'));
+    buckets[pt] = { manual, auto, ignorable };
+    cntManual += manual.length;
+    cntAuto   += auto.length;
+    cntIgnore += ignorable.length;
+  }
+  const cntMain = (d.postTypes?.length || 0) + (d.taxonomies?.length || 0) + (d.patterns?.length || 0);
 
-    // Manual fields first (orange, draggable)
-    if (manual.length) {
-      const ptHint = HINTS[pt] ? ' — ' + HINTS[pt] : '';
-      sh += `<div class="grp"><div class="grp-title">Bitte selbst zuordnen (${esc(pt)}${esc(ptHint)})</div>`;
-      for (const mk of manual) {
-        const used = ST.mappings.some(m => m.src.type === 'meta' && m.src.name === mk.name && m.src.postType === pt);
-        const hint = mk.hint ? `<span class="desc">${esc(mk.hint)}</span>` : '';
-        const preview = mk.samples.length ? `<span class="preview">Beispiele: ${samp(mk.samples, 30).map(esc).join(', ')}</span>` : '';
-        sh += `<div class="src-item${used?' used':''}" draggable="${!used}" data-t="meta" data-n="${esc(mk.name)}" data-f="${esc(mk.fileIdx)}" data-pt="${esc(pt)}">
-          <div class="row1"><span class="tag">Feld</span><span class="nm">${esc(mk.name)}</span></div>
+  // === TAB-NAVIGATION ===
+  const tabsCfg = [
+    { id: 'main',   label: 'Inhaltstypen & Sektionen',     count: cntMain },
+    { id: 'manual', label: 'Bitte selbst zuordnen',         count: cntManual },
+    { id: 'auto',   label: 'Wird automatisch mitgenommen',  count: cntAuto },
+    { id: 'ignore', label: 'Brauchst du wahrscheinlich nicht', count: cntIgnore },
+  ];
+  // Wenn aktiver Tab leer ist (z.B. nach Reset), zurueck auf 'main'
+  const activeTab = tabsCfg.find(t => t.id === ST.activeSourceTab) || tabsCfg[0];
+  if (activeTab.count === 0 && ST.activeSourceTab !== 'main') ST.activeSourceTab = 'main';
+
+  tabsEl.innerHTML = tabsCfg.map(t => `
+    <div class="src-tab${ST.activeSourceTab === t.id ? ' active' : ''}" data-tab="${t.id}">
+      ${esc(t.label)}<span class="src-tab-count">${t.count}</span>
+    </div>
+  `).join('');
+
+  tabsEl.querySelectorAll('.src-tab').forEach(el => {
+    el.onclick = () => {
+      ST.activeSourceTab = el.dataset.tab;
+      renderDnD();
+    };
+  });
+
+  // === SOURCE-INHALT pro Tab ===
+  let sh = '';
+
+  if (ST.activeSourceTab === 'main') {
+    sh += `<div class="src-note"><strong>Was du hier siehst:</strong> Das sind die wichtigsten Bausteine, die das Tool in deinen Dateien gefunden hat — Inhaltstypen (z.B. Lektionen, Seiten, Produkte), Kategorien/Sektionen und Quiz-Codes. <strong>Diese musst du auf die richtigen Plätze in der grünen Spalte rechts ziehen.</strong> Wenn du den grünen Knopf „Alles automatisch zuordnen" oben gedrückt hast, ist das Wichtigste schon erledigt — du kannst direkt zu Schritt 3 weitergehen.</div>`;
+    // Inhaltstypen
+    if (d.postTypes.length) {
+      sh += '<div class="grp"><div class="grp-title">Inhaltstypen — was wurde in deinen Dateien gefunden?</div>';
+      for (const pt of d.postTypes) {
+        const used = ST.mappings.some(m => m.src.type === 'post_type' && m.src.name === pt.name);
+        const hint = pt.hint ? `<span class="desc">${esc(pt.hint)}</span>` : '';
+        const preview = pt.samples.length ? `<span class="preview">Beispiele: "${samp(pt.samples).map(esc).join('", "')}"</span>` : '';
+        sh += `<div class="src-item${used?' used':''}" draggable="${!used}" data-t="post_type" data-n="${esc(pt.name)}" data-f="${esc(pt.fileIdx)}">
+          <div class="row1"><span class="tag">Typ</span><span class="nm">${esc(pt.name)}</span><span class="cnt">${pt.count} Stück</span></div>
           ${hint}${preview}
         </div>`;
       }
       sh += '</div>';
     }
-
-    // "Brauchst du wahrscheinlich nicht" — Plugin-Internas, einklappbar
-    if (ignorable.length) {
-      sh += `<details class="grp grp-ignorable"><summary class="grp-title grp-ignorable-title">
-        ⓘ Brauchst du wahrscheinlich nicht (${esc(pt)}) — ${ignorable.length} Plugin-interne Felder
-        <span class="grp-ignorable-hint"> · klick zum Aufklappen</span>
-      </summary>
-      <div class="grp-ignorable-note">Diese Felder steuern alte MemberPress-Plugin-Funktionen (Zertifikate, Drip-Content, Auth-Texte, E-Mail-Templates). Sie werden in WordPress nicht übernommen, falls du sie hier liegen lässt — das ist meistens richtig so, weil das neue System diese Funktionen anders löst. Falls du eines doch brauchst: einfach rüber-ziehen.</div>`;
-      for (const mk of ignorable) {
-        const used = ST.mappings.some(m => m.src.type === 'meta' && m.src.name === mk.name && m.src.postType === pt);
-        const preview = mk.samples.length ? `<span class="preview">Beispiele: ${samp(mk.samples, 30).map(esc).join(', ')}</span>` : '';
-        sh += `<div class="src-item src-item-dim${used?' used':''}" draggable="${!used}" data-t="meta" data-n="${esc(mk.name)}" data-f="${esc(mk.fileIdx)}" data-pt="${esc(pt)}">
-          <div class="row1"><span class="tag">Feld</span><span class="nm">${esc(mk.name)}</span></div>
-          ${preview}
+    // Taxonomien
+    if (d.taxonomies.length) {
+      sh += '<div class="grp"><div class="grp-title">Kategorien & Sektionen aus deinem alten System</div>';
+      for (const tx of d.taxonomies) {
+        const used = ST.mappings.some(m => m.src.type === 'taxonomy' && m.src.name === tx.name);
+        const hint = tx.hint ? `<span class="desc">${esc(tx.hint)}</span>` : '';
+        const preview = tx.samples.length ? `<span class="preview">Beispiele: ${samp(tx.samples).map(esc).join(', ')}${tx.termCount > tx.samples.length ? ', ...' : ''}</span>` : '';
+        sh += `<div class="src-item${used?' used':''}" draggable="${!used}" data-t="taxonomy" data-n="${esc(tx.name)}" data-f="${esc(tx.fileIdx)}">
+          <div class="row1"><span class="tag">Kat</span><span class="nm">${esc(tx.name)}</span><span class="cnt">${tx.termCount} Stück</span></div>
+          ${hint}${preview}
         </div>`;
       }
-      sh += '</details>';
+      sh += '</div>';
     }
+    // Quiz-Codes
+    if (d.patterns.length) {
+      sh += '<div class="grp"><div class="grp-title">Im Lektion-Text gefundene Quiz-Codes</div>';
+      for (const cp of d.patterns) {
+        const used = ST.mappings.some(m => m.src.type === 'pattern' && m.src.name === cp.name);
+        const hint = cp.hint ? `<span class="desc">${esc(cp.hint)}</span>` : '';
+        sh += `<div class="src-item${used?' used':''}" draggable="${!used}" data-t="pattern" data-n="${esc(cp.name)}" data-f="${esc(cp.fileIdx)}">
+          <div class="row1"><span class="tag">Quiz</span><span class="nm">${esc(cp.example)}</span></div>
+          ${hint}
+        </div>`;
+      }
+      sh += '</div>';
+    }
+  }
 
-    // Auto-passthrough fields (green/dimmed, not draggable by default)
-    if (auto.length) {
-      sh += `<div class="grp"><div class="grp-title">&#10003; Wird automatisch mitgenommen (${esc(pt)}) — ${auto.length} Felder, du musst nichts tun</div>`;
-      for (const mk of auto) {
+  if (ST.activeSourceTab === 'manual') {
+    if (cntManual === 0) {
+      sh += `<div class="src-note"><strong>Nichts zu tun.</strong> Alle Felder, die du ggf. selbst zuordnen müsstest, sind entweder bereits über „Alles automatisch zuordnen" gemappt oder als „Brauchst du wahrscheinlich nicht" eingestuft. Du kannst direkt zu Schritt 3 weitergehen.</div>`;
+    } else {
+      sh += `<div class="src-note"><strong>Was du hier tun sollst:</strong> Diese Felder konnte das Tool nicht eindeutig erkennen. Schau dir jedes kurz an — wenn du weißt, wohin es gehört, zieh es auf den passenden grünen Platz rechts. <strong>Wenn du nicht weißt, was das Feld macht, lass es liegen.</strong> Es wird dann beim Export einfach nicht übernommen — der Kurs-Inhalt bleibt davon unberührt.</div>`;
+      for (const [pt, b] of Object.entries(buckets)) {
+        if (!b.manual.length) continue;
+        const ptHint = HINTS[pt] ? ' — ' + HINTS[pt] : '';
+        sh += `<div class="grp"><div class="grp-title">${esc(pt)}${esc(ptHint)}</div>`;
+        for (const mk of b.manual) {
+          const used = ST.mappings.some(m => m.src.type === 'meta' && m.src.name === mk.name && m.src.postType === pt);
+          const hint = mk.hint ? `<span class="desc">${esc(mk.hint)}</span>` : '';
+          const preview = mk.samples.length ? `<span class="preview">Beispiele: ${samp(mk.samples, 30).map(esc).join(', ')}</span>` : '';
+          sh += `<div class="src-item${used?' used':''}" draggable="${!used}" data-t="meta" data-n="${esc(mk.name)}" data-f="${esc(mk.fileIdx)}" data-pt="${esc(pt)}">
+            <div class="row1"><span class="tag">Feld</span><span class="nm">${esc(mk.name)}</span></div>
+            ${hint}${preview}
+          </div>`;
+        }
+        sh += '</div>';
+      }
+    }
+  }
+
+  if (ST.activeSourceTab === 'auto') {
+    sh += `<div class="src-note"><strong>Was du hier siehst (du musst nichts tun):</strong> Diese Felder enthalten Zusatz-Infos zu deinen Inhalten (z.B. Video-Titel, Beschreibungen, eigene Werte). Sie werden bei der Migration <strong>automatisch 1:1 übernommen</strong> — der Inhalt landet ohne weiteres Zutun in deiner neuen WordPress-Seite. Du kannst diesen Tab gefahrlos überspringen.</div>`;
+    for (const [pt, b] of Object.entries(buckets)) {
+      if (!b.auto.length) continue;
+      sh += `<div class="grp"><div class="grp-title">${esc(pt)} — ${b.auto.length} Felder</div>`;
+      for (const mk of b.auto) {
         const used = ST.mappings.some(m => m.src.type === 'meta' && m.src.name === mk.name && m.src.postType === pt);
         const hint = mk.hint ? `<span class="desc">${esc(mk.hint)}</span>` : `<span class="desc">Wird automatisch mit nach WordPress übernommen.</span>`;
         const preview = mk.samples.length ? `<span class="preview">Beispiele: ${samp(mk.samples, 30).map(esc).join(', ')}</span>` : '';
@@ -925,19 +969,26 @@ function renderDnD() {
     }
   }
 
-  // Content patterns
-  if (d.patterns.length) {
-    sh += '<div class="grp"><div class="grp-title">Im Lektion-Text gefundene Quiz-Codes</div>';
-    for (const cp of d.patterns) {
-      const used = ST.mappings.some(m => m.src.type === 'pattern' && m.src.name === cp.name);
-      const hint = cp.hint ? `<span class="desc">${esc(cp.hint)}</span>` : '';
-      sh += `<div class="src-item${used?' used':''}" draggable="${!used}" data-t="pattern" data-n="${esc(cp.name)}" data-f="${esc(cp.fileIdx)}">
-        <div class="row1"><span class="tag">Quiz</span><span class="nm">${esc(cp.example)}</span></div>
-        ${hint}
-      </div>`;
+  if (ST.activeSourceTab === 'ignore') {
+    sh += `<div class="src-note"><strong>Was du hier siehst:</strong> Diese Felder kommen aus dem alten Plugin (MemberPress) und steuern dort <strong>Plugin-eigene Funktionen</strong> — Zertifikate, zeitversetztes Freischalten von Lektionen (Drip-Content), „Sie haben keine Berechtigung"-Texte, MemberPress-E-Mails, Trial-Perioden, interne Gruppen-IDs.<br><br>
+    <strong>Warum du sie meistens nicht brauchst:</strong> Im neuen WordPress-System ohne MemberPress-Plugin liest sie niemand. Sie wären wie ein Bauplan für ein Plugin, das nicht mehr installiert ist — wertlose Daten in der Datenbank.<br><br>
+    <strong>Was passiert, wenn du sie hier liegen lässt:</strong> Sie werden <strong>nicht in WordPress übernommen</strong>. Der Lehrinhalt deiner Kurse (Texte, Videos, Bilder, Reihenfolge, Sektionen, Preise) ist davon nicht betroffen — der ist in den anderen Tabs.<br><br>
+    <strong>Was du trotzdem prüfen solltest:</strong> Geh die Liste einmal kurz durch und schau, ob ein Feld dabei ist, das du im neuen System weiterbenutzen willst (z.B. wenn dein neues System tatsächlich Drip-Content kann). In dem Fall: Feld einfach auf einen passenden grünen Platz rechts ziehen.</div>`;
+    for (const [pt, b] of Object.entries(buckets)) {
+      if (!b.ignorable.length) continue;
+      sh += `<div class="grp"><div class="grp-title">${esc(pt)} — ${b.ignorable.length} Plugin-interne Felder</div>`;
+      for (const mk of b.ignorable) {
+        const used = ST.mappings.some(m => m.src.type === 'meta' && m.src.name === mk.name && m.src.postType === pt);
+        const preview = mk.samples.length ? `<span class="preview">Beispiele: ${samp(mk.samples, 30).map(esc).join(', ')}</span>` : '';
+        sh += `<div class="src-item src-item-dim${used?' used':''}" draggable="${!used}" data-t="meta" data-n="${esc(mk.name)}" data-f="${esc(mk.fileIdx)}" data-pt="${esc(pt)}">
+          <div class="row1"><span class="tag">Feld</span><span class="nm">${esc(mk.name)}</span></div>
+          ${preview}
+        </div>`;
+      }
+      sh += '</div>';
     }
-    sh += '</div>';
   }
+
   srcEl.innerHTML = sh;
 
   // === TARGET COLUMN ===
