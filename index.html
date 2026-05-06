@@ -40,9 +40,10 @@ header p { color: var(--text2); font-size: 0.82rem; }
 .step-btn.locked:hover { background: var(--bg2); }
 .step-btn .n { display: inline-block; width: 1.6rem; height: 1.6rem; line-height: 1.6rem; border-radius: 50%; background: var(--bg4); font-size: 0.8rem; margin-right: 0.4rem; transition: 0.2s; }
 .step-btn.active .n { background: var(--accent); color: #fff; }
-.step-btn.locked .n::after { content: ' 🔒'; font-size: 0.6em; }
-.step-btn.locked .n { font-size: 0; }
-.step-btn.locked .n::before { content: '🔒'; font-size: 0.85rem; }
+.step-btn.done .n::before { content: '\2713'; }
+.step-btn.done .n { font-size: 0; }
+.step-btn.done .n::before { font-size: 0.95rem; }
+.step-btn.locked .n { background: transparent; border: 1px dashed var(--bg4); color: var(--text3); }
 
 /* ===== PANELS ===== */
 .panel { display: none; } .panel.show { display: block; }
@@ -51,17 +52,16 @@ header p { color: var(--text2); font-size: 0.82rem; }
 .card h3 { font-size: 0.92rem; color: var(--text2); margin-bottom: 0.4rem; }
 .hint { font-size: 0.88rem; line-height: 1.55; color: var(--text2); margin-bottom: 0.75rem; }
 
-/* Pro-Schritt-Info-Box mit Was / Warum / Tipp */
-.step-intro { background: linear-gradient(135deg, rgba(108,138,255,0.10), rgba(74,222,128,0.05)); border: 1px solid rgba(108,138,255,0.30); border-left: 4px solid var(--accent); border-radius: var(--radius); padding: 1rem 1.2rem; margin-bottom: 1.2rem; }
-.step-intro-row { display: flex; gap: 0.6rem; align-items: flex-start; margin-bottom: 0.5rem; line-height: 1.55; font-size: 0.92rem; }
-.step-intro-row:last-child { margin-bottom: 0; }
-.step-intro-label { font-size: 1.05rem; flex-shrink: 0; width: 1.6rem; text-align: center; }
-.step-intro-text { color: var(--text); }
-.step-intro-text b { color: var(--accent); }
-.step-intro-tip { color: var(--text2); font-style: italic; font-size: 0.86rem; padding-top: 0.3rem; border-top: 1px dashed rgba(108,138,255,0.2); margin-top: 0.4rem; }
+/* Pro-Schritt-Intro: knappe Apple-Style-Aussage statt Was/Warum/Tipp-Ritual */
+.step-intro { border-left: 3px solid var(--accent); padding: 0.4rem 0 0.4rem 1.2rem; margin-bottom: 1.4rem; }
+.step-intro-headline { font-size: 1.4rem; font-weight: 700; line-height: 1.25; color: var(--text); margin: 0 0 0.4rem; letter-spacing: -0.01em; }
+.step-intro-sub { font-size: 0.95rem; line-height: 1.55; color: var(--text2); margin: 0; }
+.step-intro-sub b { color: var(--text); }
 
 /* ===== BUTTONS ===== */
 .btn { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.5rem 1rem; border-radius: var(--radius); font-weight: 600; border: none; font-size: 0.82rem; transition: 0.2s; }
+.btn-hero { padding: 0.85rem 1.6rem; font-size: 1rem; box-shadow: 0 6px 22px -6px rgba(74,222,128,0.55); }
+.btn-hero:hover { transform: translateY(-1px); box-shadow: 0 8px 28px -6px rgba(74,222,128,0.65); }
 .btn-p { background: var(--accent); color: #fff; } .btn-p:hover { background: var(--accent2); }
 .btn-s { background: var(--bg3); color: var(--text); } .btn-s:hover { background: var(--bg4); }
 .btn-d { background: var(--red); color: #fff; }
@@ -135,8 +135,9 @@ header p { color: var(--text2); font-size: 0.82rem; }
 .src-tab[data-tab="manual"].active .src-tab-count { background: var(--orange); color: #fff; }
 .src-tab[data-tab="auto"].active .src-tab-count   { background: var(--green); color: #fff; }
 .src-tab[data-tab="ignore"].active .src-tab-count { background: var(--text3); color: var(--bg2); }
-.mapping-guide { background: var(--bg3); border: 1px solid var(--bg4); border-radius: var(--radius); padding: 0.75rem 1rem; margin-bottom: 0.75rem; font-size: 0.78rem; line-height: 1.6; color: var(--text2); }
-.mapping-guide strong { color: var(--accent); }
+.mapping-guide { background: linear-gradient(135deg, rgba(74,222,128,0.08), rgba(74,222,128,0.03)); border: 1px solid rgba(74,222,128,0.35); border-left: 4px solid var(--green); border-radius: var(--radius); padding: 1.1rem 1.3rem; margin-bottom: 1rem; }
+.mapping-guide-headline { font-size: 1.15rem; font-weight: 700; color: var(--green); margin: 0 0 0.3rem; letter-spacing: -0.005em; }
+.mapping-guide-sub { font-size: 0.95rem; color: var(--text2); margin: 0 0 0.9rem; line-height: 1.55; }
 .mapping-guide .arrow { color: var(--green); font-weight: 700; }
 .mapping-guide ul { margin: 0.3rem 0 0 1.2rem; }
 .mapping-guide li { margin-bottom: 0.15rem; }
@@ -226,15 +227,10 @@ tr:hover td { background: rgba(255,255,255,0.02); }
     <p>In 4 Schritten von der alten Plattform zur neuen WordPress-Seite</p>
   </header>
 
-  <div class="card" style="background:linear-gradient(135deg,rgba(108,138,255,0.08),rgba(74,222,128,0.08));border:1px solid rgba(108,138,255,0.3);">
-    <h2 style="font-size:0.95rem;">&#128161; So funktioniert dieser Helfer</h2>
-    <p style="font-size:0.82rem;color:var(--text2);margin:0.3rem 0;">Du hast Lektionen, Sektionen und Angebote in deinem alten System. Dieser Helfer macht daraus eine Datei, die du in WordPress hochladen kannst. Du musst <strong>kein Technik-Profi</strong> sein.</p>
-    <ol style="font-size:0.82rem;color:var(--text2);margin:0.5rem 0 0 1.2rem;line-height:1.7;">
-      <li><strong>Schritt 1:</strong> Du lädst deine Export-Dateien (XML) aus dem alten System hoch.</li>
-      <li><strong>Schritt 2:</strong> Du sagst dem Helfer, was wohin gehören soll. <em>Tipp: Klicke einfach den grünen Knopf "Alles automatisch zuordnen" — das macht es für dich.</em></li>
-      <li><strong>Schritt 3:</strong> Du schaust dir an, was rauskommt, bevor es nach WordPress geht.</li>
-      <li><strong>Schritt 4:</strong> Du lädst die fertige Datei herunter und importierst sie in WordPress.</li>
-    </ol>
+  <div id="welcome-box" class="card" style="background:linear-gradient(135deg,rgba(108,138,255,0.08),rgba(74,222,128,0.08));border:1px solid rgba(108,138,255,0.3);">
+    <h2 style="font-size:1.1rem;margin-bottom:0.6rem;">Dein Kurs zieht um.</h2>
+    <p style="font-size:0.95rem;color:var(--text);margin:0;line-height:1.65;">Lade die Dateien aus deinem alten System hoch. Klick einen Knopf. Lade die fertige WordPress-Datei runter.</p>
+    <p style="font-size:0.95rem;color:var(--text2);margin:0.5rem 0 0;line-height:1.65;">Das ist alles. Kein Technik-Profi nötig.</p>
   </div>
 
   <nav class="stepper" id="stepper">
@@ -247,13 +243,12 @@ tr:hover td { background: rgba(255,255,255,0.02); }
   <!-- ===== STEP 1 — FILES ===== -->
   <div class="panel show" id="p0">
     <div class="step-intro">
-      <div class="step-intro-row"><span class="step-intro-label">📥</span><span class="step-intro-text"><b>Was du jetzt machst:</b> Du lädst die Export-Dateien aus dem alten System hoch. Das sind XML-Dateien, die du dort exportiert hast.</span></div>
-      <div class="step-intro-row"><span class="step-intro-label">❓</span><span class="step-intro-text"><b>Warum:</b> Das Tool muss wissen, was in deinem Kurs steckt — Lektionen, Sektionen, Angebote — bevor es daraus eine WordPress-Datei machen kann.</span></div>
-      <div class="step-intro-tip">💡 <b>Tipp:</b> Meistens sind das 3 Dateien (Lektionen / Sektionen / Angebote). Falls du nur eine hast, reicht eine — das Tool erkennt automatisch, was drin ist. Wenn du mehr brauchst, klick auf „+ Noch ein Datei-Feld hinzufügen".</div>
+      <h2 class="step-intro-headline">Lass die Dateien fallen.</h2>
+      <p class="step-intro-sub">Die XML-Exporte aus deinem alten System. Meistens drei Stück: Lektionen, Sektionen, Angebote. Wenn es weniger sind, ist das auch ok.</p>
     </div>
     <div class="card">
-      <h2>Schritt 1: Deine Export-Dateien hochladen</h2>
-      <p class="hint">Du kannst die Dateien einfach in die grauen Felder ziehen oder draufklicken.</p>
+      <h2>Deine Export-Dateien hochladen</h2>
+      <p class="hint">In die grauen Felder ziehen oder draufklicken. Brauchst du mehr Felder, klick auf „Noch ein Datei-Feld hinzufügen".</p>
       <div class="upload-grid" id="upload-grid"></div>
       <div class="gap" style="margin-top:0.75rem;">
         <button class="btn btn-s btn-sm" id="btn-add-slot">+ Noch ein Datei-Feld hinzufügen</button>
@@ -263,7 +258,7 @@ tr:hover td { background: rgba(255,255,255,0.02); }
 
     <div class="card">
       <h2>Früher gespeicherte Vorlagen</h2>
-      <p class="hint">Wenn du früher schon einmal eine Zuordnung gemacht und gespeichert hast, kannst du sie hier per Klick laden. Die Felder im nächsten Schritt sind dann schon ausgefüllt — du sparst dir die Arbeit.</p>
+      <p class="hint">Wenn du früher schon einmal eine Zuordnung gespeichert hast, kannst du sie hier per Klick laden. Die Felder im nächsten Schritt sind dann schon ausgefüllt.</p>
       <div class="proc-grid" id="proc-grid"></div>
     </div>
 
@@ -276,27 +271,24 @@ tr:hover td { background: rgba(255,255,255,0.02); }
   <!-- ===== STEP 2 — DRAG & DROP MAPPING ===== -->
   <div class="panel" id="p1">
     <div class="step-intro">
-      <div class="step-intro-row"><span class="step-intro-label">🧩</span><span class="step-intro-text"><b>Was du jetzt machst:</b> Du sagst dem Tool, welche Inhalte aus deinem alten System wo in WordPress landen sollen.</span></div>
-      <div class="step-intro-row"><span class="step-intro-label">❓</span><span class="step-intro-text"><b>Warum:</b> WordPress kennt deine alten Plugin-Begriffe (z.B. „mpcs-lesson", „memberpressproduct") nicht — wir müssen sie übersetzen.</span></div>
-      <div class="step-intro-tip">💡 <b>Tipp:</b> Klick zuerst den grünen Knopf <b>„Alles automatisch zuordnen"</b>. In 99% der Fälle ist danach alles richtig — du musst keinen einzigen Eintrag selbst ziehen und kannst direkt zu Schritt 3 weiter.</div>
+      <h2 class="step-intro-headline">Sag dem Tool, was wohin gehört.</h2>
+      <p class="step-intro-sub">Ein Klick auf <b>Alles automatisch zuordnen</b> reicht in 99% der Fälle. Falls du etwas anders willst, ziehst du orange auf grün.</p>
     </div>
     <div class="card">
-      <h2>Schritt 2: Was soll wohin gehören?</h2>
-      <p class="hint">Hier sagst du dem Helfer, welche Inhalte aus deinem alten System wo in WordPress ankommen sollen. <strong>Am einfachsten:</strong> Klicke einmal auf den grünen Knopf weiter unten — der Helfer macht das automatisch für dich. Falls etwas nicht passt, kannst du es danach noch von Hand korrigieren.</p>
+      <h2>Was soll wohin gehören?</h2>
       <div class="mapping-guide" id="mapping-guide">
-        <strong>&#9889; Empfehlung:</strong> Lass den Helfer alles automatisch zuordnen. Das funktioniert in 99% der Fälle und du musst nichts wissen.
-        <div class="gap" style="margin-top:0.5rem;">
-          <button class="btn btn-g" id="btn-auto-map">&#10003; Alles automatisch zuordnen</button>
-        </div>
-        <div style="margin-top:0.8rem;">
-          <label style="display:block; font-size:0.8rem; color:var(--text2); margin-bottom:0.3rem;">
+        <p class="mapping-guide-headline">Klick einmal. Fertig.</p>
+        <p class="mapping-guide-sub">Funktioniert in 99% der Fälle. Wenn nachher was nicht passt, korrigierst du es von Hand.</p>
+        <button class="btn btn-g btn-hero" id="btn-auto-map">&#10003; Alles automatisch zuordnen</button>
+        <div style="margin-top:1.1rem;padding-top:0.9rem;border-top:1px dashed rgba(74,222,128,0.2);">
+          <label style="display:block; font-size:0.85rem; color:var(--text2); margin-bottom:0.3rem;">
             <strong>Optional:</strong> Neue Domain für den Live-Shop (ersetzt alte Preview-/Staging-URLs in den Inhalten)
           </label>
-          <input type="text" id="inp-base-url" placeholder="z.B. https://www.webgefaehrte.de" style="width:100%; max-width:420px; padding:0.4rem 0.6rem; font-size:0.82rem; background:var(--bg); border:1px solid var(--bg4); border-radius:4px; color:var(--text);">
-          <div style="font-size:0.72rem; color:var(--text3); margin-top:0.2rem;">Leer lassen, wenn keine URLs ersetzt werden sollen.</div>
+          <input type="text" id="inp-base-url" placeholder="z.B. https://www.webgefaehrte.de" style="width:100%; max-width:420px; padding:0.5rem 0.7rem; font-size:0.88rem; background:var(--bg); border:1px solid var(--bg4); border-radius:4px; color:var(--text);">
+          <div style="font-size:0.78rem; color:var(--text3); margin-top:0.3rem;">Leer lassen, wenn keine URLs ersetzt werden sollen.</div>
         </div>
       </div>
-      <p class="hint" style="margin-top:1rem;"><strong>Falls du etwas selbst zuordnen willst:</strong> In der linken Spalte stehen die Inhalte aus deinem alten System (orange). In der rechten Spalte stehen die Plätze in WordPress (grün). Du nimmst einfach einen orangen Eintrag mit der Maus, ziehst ihn nach rechts auf den passenden grünen Platz und lässt los. Fertig.</p>
+      <p class="hint" style="margin-top:1rem;"><strong>Falls du etwas selbst zuordnen willst:</strong> Linke Spalte ist dein altes System (orange), rechts sind die WordPress-Plätze (grün). Orange anfassen, auf grün ziehen, loslassen.</p>
       <div class="dnd" id="dnd">
         <div class="dnd-col">
           <div class="dnd-head src" id="src-head">Aus deinem alten System</div>
@@ -331,7 +323,7 @@ tr:hover td { background: rgba(255,255,255,0.02); }
     </div>
     <div class="card">
       <h2>&#128193; Sichere Datei-Sicherung (empfohlen)</h2>
-      <p class="hint">Lade deine Zuordnungen als Datei auf deinen Computer herunter — z.B. auf den Desktop oder in deine Cloud. Diese Datei geht nie verloren und du kannst sie auch auf einem anderen Computer benutzen. Später klickst du einfach auf "Vorlage hochladen" und alles ist wieder da.</p>
+      <p class="hint">Lade deine Zuordnungen als Datei auf deinen Computer herunter, z.B. auf den Desktop oder in deine Cloud. Diese Datei geht nie verloren und kann auch auf einem anderen Computer geladen werden. Später klickst du auf „Vorlage hochladen" und alles ist wieder da.</p>
       <div class="gap" style="margin-top:0.5rem;">
         <button class="btn btn-p btn-sm" id="btn-export-map">&#11015; Vorlage als Datei herunterladen</button>
         <button class="btn btn-g btn-sm" id="btn-import-map">&#11014; Vorlage aus Datei hochladen</button>
@@ -347,13 +339,11 @@ tr:hover td { background: rgba(255,255,255,0.02); }
   <!-- ===== STEP 3 — PREVIEW ===== -->
   <div class="panel" id="p2">
     <div class="step-intro">
-      <div class="step-intro-row"><span class="step-intro-label">👀</span><span class="step-intro-text"><b>Was du jetzt machst:</b> Du schaust dir einmal an, wie deine Inhalte später in WordPress aussehen werden.</span></div>
-      <div class="step-intro-row"><span class="step-intro-label">❓</span><span class="step-intro-text"><b>Warum:</b> Lieber jetzt einen Fehler bemerken als nach dem Import. Wenn etwas falsch ist, kannst du zurück zu Schritt 2 und korrigieren.</span></div>
-      <div class="step-intro-tip">💡 <b>Tipp:</b> Schau dir vor allem <b>rote Zeilen</b> an — das sind Lektionen, denen das Tool keine Sektion zuordnen konnte. Bei <b>0 Probleme</b> oben ist alles in Ordnung, du kannst zum letzten Schritt weiter.</div>
+      <h2 class="step-intro-headline">Schau einmal drüber.</h2>
+      <p class="step-intro-sub">Lieber jetzt finden als nach dem Import. Bei <b>0 Probleme</b> oben ist alles in Ordnung. Rote Zeilen sind Lektionen ohne Sektion. Wenn was nicht passt, geh zurück und korrigier.</p>
     </div>
     <div class="card">
-      <h2>Schritt 3: So wird es in WordPress aussehen</h2>
-      <p class="hint">Hier siehst du, wie deine Inhalte in WordPress ankommen werden.</p>
+      <h2>So wird es in WordPress aussehen</h2>
       <div class="v-bar" id="v-bar"></div>
       <div class="tabs" id="pv-tabs"></div>
       <div id="pv-panels"></div>
@@ -368,12 +358,11 @@ tr:hover td { background: rgba(255,255,255,0.02); }
   <!-- ===== STEP 4 — EXPORT ===== -->
   <div class="panel" id="p3">
     <div class="step-intro">
-      <div class="step-intro-row"><span class="step-intro-label">📦</span><span class="step-intro-text"><b>Was du jetzt machst:</b> Du erstellst die fertige WordPress-Datei und lädst sie auf deinen Computer herunter.</span></div>
-      <div class="step-intro-row"><span class="step-intro-label">❓</span><span class="step-intro-text"><b>Warum:</b> Diese .xml-Datei kannst du in deiner WordPress-Seite unter <em>Werkzeuge → Daten importieren</em> hochladen — sie enthält all deine Inhalte fertig sortiert.</span></div>
-      <div class="step-intro-tip">💡 <b>Tipp:</b> Erst <b>„Datei vorbereiten"</b> klicken (rechnet kurz), dann <b>„Datei herunterladen"</b>. Die Schritt-für-Schritt-Anleitung für den Import in WordPress steht weiter unten.</div>
+      <h2 class="step-intro-headline">Datei holen. Fertig.</h2>
+      <p class="step-intro-sub">Erst <b>Datei vorbereiten</b>, dann <b>Datei herunterladen</b>. Die Anleitung für den Import in WordPress steht weiter unten.</p>
     </div>
     <div class="card">
-      <h2>Schritt 4: Datei für WordPress herunterladen</h2>
+      <h2>Datei für WordPress herunterladen</h2>
       <p class="hint">Hier siehst du eine Zusammenfassung dessen, was importiert wird.</p>
       <div class="stat-grid" id="exp-stats"></div>
       <div class="cfg">
@@ -388,7 +377,7 @@ tr:hover td { background: rgba(255,255,255,0.02); }
         <button class="btn btn-p" id="btn-gen">&#9881; Datei vorbereiten</button>
         <button class="btn btn-g" id="btn-dl" disabled>&#11015; Datei herunterladen</button>
       </div>
-      <p class="hint" style="margin-top:0.75rem;font-size:0.75rem;">Nach dem Klick auf "Datei vorbereiten" siehst du unten einen Vorschau-Auszug der erzeugten Datei. Das ist nur zur Kontrolle — du musst nichts daran ändern.</p>
+      <p class="hint" style="margin-top:0.75rem;font-size:0.82rem;">Nach dem Klick auf „Datei vorbereiten" siehst du unten einen Vorschau-Auszug. Nur zur Kontrolle. Du musst nichts daran ändern.</p>
       <div class="xml-box" id="xml-box" style="display:none;"></div>
     </div>
     <div class="card">
@@ -546,7 +535,7 @@ function renderUpload() {
     z.innerHTML = `<div class="ico">${fd ? '&#10003;' : '&#128196;'}</div>
       <div class="lbl">XML-Datei ${i+1}</div>
       <div class="info">${fd ? '' : 'Klicken oder Datei hierher ziehen'}</div>
-      ${fd ? '<div class="stats">' + fd.items.length + ' Items — ' + esc(fd.name) + '</div>' : ''}`;
+      ${fd ? '<div class="stats">' + fd.items.length + ' Items · ' + esc(fd.name) + '</div>' : ''}`;
     z.onclick = () => { const inp = document.createElement('input'); inp.type='file'; inp.accept='.xml'; inp.onchange=e=>doUpload(i,e.target.files[0]); inp.click(); };
     z.ondragover = e => { e.preventDefault(); z.classList.add('over'); };
     z.ondragleave = () => z.classList.remove('over');
@@ -759,7 +748,7 @@ function isIgnorable(fieldName) {
 const WP_TARGETS = [
   { group: '1. Was wird zu was?', items: [
     { name: 'post', type: 'Beitrag', desc: 'Hierhin gehören deine Lektionen (Lerninhalte). Sie werden später ganz normale WordPress-Beiträge.' },
-    { name: 'page', type: 'Seite', desc: 'Hierhin gehören deine WordPress-Seiten (Pages). Sie werden 1:1 als Pages übernommen — z.B. Impressum, Datenschutz, Über-uns.' },
+    { name: 'page', type: 'Seite', desc: 'Hierhin gehören deine WordPress-Seiten (Pages). Sie werden 1:1 übernommen, z.B. Impressum, Datenschutz, Über-uns.' },
     { name: 'wg_angebot', type: 'Angebot', desc: 'Hierhin gehören deine Angebote oder Produkte (z.B. Premium-Mitgliedschaften).' },
   ]},
   { group: '2. Kategorien & Sektionen', items: [
@@ -895,18 +884,17 @@ function renderDnD() {
 
   // === TAB-NAVIGATION ===
   const tabsCfg = [
-    { id: 'main',   label: 'Inhaltstypen & Sektionen',         count: cntMain,   icon: '🧱' },
-    { id: 'manual', label: 'Bitte selbst zuordnen',            count: cntManual, icon: '✋' },
-    { id: 'auto',   label: 'Wird automatisch mitgenommen',     count: cntAuto,   icon: '✓'  },
-    { id: 'ignore', label: 'Brauchst du wahrscheinlich nicht', count: cntIgnore, icon: 'ⓘ'  },
+    { id: 'main',   label: 'Inhaltstypen & Sektionen',         count: cntMain   },
+    { id: 'manual', label: 'Bitte selbst zuordnen',            count: cntManual },
+    { id: 'auto',   label: 'Wird automatisch übernommen',      count: cntAuto   },
+    { id: 'ignore', label: 'Brauchst du wahrscheinlich nicht', count: cntIgnore },
   ];
   // Wenn aktiver Tab leer ist (z.B. nach Reset), zurueck auf 'main'
   const activeTab = tabsCfg.find(t => t.id === ST.activeSourceTab) || tabsCfg[0];
   if (activeTab.count === 0 && ST.activeSourceTab !== 'main') ST.activeSourceTab = 'main';
 
   tabsEl.innerHTML = tabsCfg.map(t => `
-    <div class="src-tab${ST.activeSourceTab === t.id ? ' active' : ''}" data-tab="${t.id}" title="Klick: ${esc(t.label)}">
-      <span class="src-tab-icon">${t.icon}</span>
+    <div class="src-tab${ST.activeSourceTab === t.id ? ' active' : ''}" data-tab="${t.id}">
       <span>${esc(t.label)}</span>
       <span class="src-tab-count">${t.count}</span>
     </div>
@@ -923,10 +911,10 @@ function renderDnD() {
   let sh = '';
 
   if (ST.activeSourceTab === 'main') {
-    sh += `<div class="src-note"><strong>Was du hier siehst:</strong> Das sind die wichtigsten Bausteine, die das Tool in deinen Dateien gefunden hat — Inhaltstypen (z.B. Lektionen, Seiten, Produkte), Kategorien/Sektionen und Quiz-Codes. <strong>Diese musst du auf die richtigen Plätze in der grünen Spalte rechts ziehen.</strong> Wenn du den grünen Knopf „Alles automatisch zuordnen" oben gedrückt hast, ist das Wichtigste schon erledigt — du kannst direkt zu Schritt 3 weitergehen.</div>`;
+    sh += `<div class="src-note"><strong>Die wichtigsten Bausteine deines Kurses.</strong> Inhaltstypen, Kategorien, Quiz-Codes. Diese gehören auf die grünen Plätze rechts. Wenn du oben „Alles automatisch zuordnen" gedrückt hast, ist das schon erledigt.</div>`;
     // Inhaltstypen
     if (d.postTypes.length) {
-      sh += '<div class="grp"><div class="grp-title">Inhaltstypen — was wurde in deinen Dateien gefunden?</div>';
+      sh += '<div class="grp"><div class="grp-title">Inhaltstypen aus deinen Dateien</div>';
       for (const pt of d.postTypes) {
         const used = ST.mappings.some(m => m.src.type === 'post_type' && m.src.name === pt.name);
         const hint = pt.hint ? `<span class="desc">${esc(pt.hint)}</span>` : '';
@@ -969,12 +957,12 @@ function renderDnD() {
 
   if (ST.activeSourceTab === 'manual') {
     if (cntManual === 0) {
-      sh += `<div class="src-note"><strong>Nichts zu tun.</strong> Alle Felder, die du ggf. selbst zuordnen müsstest, sind entweder bereits über „Alles automatisch zuordnen" gemappt oder als „Brauchst du wahrscheinlich nicht" eingestuft. Du kannst direkt zu Schritt 3 weitergehen.</div>`;
+      sh += `<div class="src-note"><strong>Nichts zu tun.</strong> Alle relevanten Felder sind bereits zugeordnet oder als irrelevant eingestuft. Geh weiter zu Schritt 3.</div>`;
     } else {
-      sh += `<div class="src-note"><strong>Was du hier tun sollst:</strong> Diese Felder konnte das Tool nicht eindeutig erkennen. Schau dir jedes kurz an — wenn du weißt, wohin es gehört, zieh es auf den passenden grünen Platz rechts. <strong>Wenn du nicht weißt, was das Feld macht, lass es liegen.</strong> Es wird dann beim Export einfach nicht übernommen — der Kurs-Inhalt bleibt davon unberührt.</div>`;
+      sh += `<div class="src-note"><strong>Felder, die das Tool nicht eindeutig erkennen konnte.</strong> Wenn du weißt, wohin eines gehört, zieh es auf den passenden grünen Platz. <strong>Im Zweifel liegen lassen.</strong> Was hier liegt, wird nicht übernommen. Dein Kurs-Inhalt bleibt davon unberührt.</div>`;
       for (const [pt, b] of Object.entries(buckets)) {
         if (!b.manual.length) continue;
-        const ptHint = HINTS[pt] ? ' — ' + HINTS[pt] : '';
+        const ptHint = HINTS[pt] ? ' · ' + HINTS[pt] : '';
         sh += `<div class="grp"><div class="grp-title">${esc(pt)}${esc(ptHint)}</div>`;
         for (const mk of b.manual) {
           const used = ST.mappings.some(m => m.src.type === 'meta' && m.src.name === mk.name && m.src.postType === pt);
@@ -991,10 +979,10 @@ function renderDnD() {
   }
 
   if (ST.activeSourceTab === 'auto') {
-    sh += `<div class="src-note"><strong>Was du hier siehst (du musst nichts tun):</strong> Diese Felder enthalten Zusatz-Infos zu deinen Inhalten (z.B. Video-Titel, Beschreibungen, eigene Werte). Sie werden bei der Migration <strong>automatisch 1:1 übernommen</strong> — der Inhalt landet ohne weiteres Zutun in deiner neuen WordPress-Seite. Du kannst diesen Tab gefahrlos überspringen.</div>`;
+    sh += `<div class="src-note"><strong>Du musst nichts tun.</strong> Diese Felder werden 1:1 in WordPress übernommen. Video-Titel, Beschreibungen, eigene Werte. Du kannst den Tab gefahrlos überspringen.</div>`;
     for (const [pt, b] of Object.entries(buckets)) {
       if (!b.auto.length) continue;
-      sh += `<div class="grp"><div class="grp-title">${esc(pt)} — ${b.auto.length} Felder</div>`;
+      sh += `<div class="grp"><div class="grp-title">${esc(pt)} · ${b.auto.length} Felder</div>`;
       for (const mk of b.auto) {
         const used = ST.mappings.some(m => m.src.type === 'meta' && m.src.name === mk.name && m.src.postType === pt);
         const hint = mk.hint ? `<span class="desc">${esc(mk.hint)}</span>` : `<span class="desc">Wird automatisch mit nach WordPress übernommen.</span>`;
@@ -1009,13 +997,12 @@ function renderDnD() {
   }
 
   if (ST.activeSourceTab === 'ignore') {
-    sh += `<div class="src-note"><strong>Was du hier siehst:</strong> Diese Felder kommen aus dem alten Plugin (MemberPress) und steuern dort <strong>Plugin-eigene Funktionen</strong> — Zertifikate, zeitversetztes Freischalten von Lektionen (Drip-Content), „Sie haben keine Berechtigung"-Texte, MemberPress-E-Mails, Trial-Perioden, interne Gruppen-IDs.<br><br>
-    <strong>Warum du sie meistens nicht brauchst:</strong> Im neuen WordPress-System ohne MemberPress-Plugin liest sie niemand. Sie wären wie ein Bauplan für ein Plugin, das nicht mehr installiert ist — wertlose Daten in der Datenbank.<br><br>
-    <strong>Was passiert, wenn du sie hier liegen lässt:</strong> Sie werden <strong>nicht in WordPress übernommen</strong>. Der Lehrinhalt deiner Kurse (Texte, Videos, Bilder, Reihenfolge, Sektionen, Preise) ist davon nicht betroffen — der ist in den anderen Tabs.<br><br>
-    <strong>Was du trotzdem prüfen solltest:</strong> Geh die Liste einmal kurz durch und schau, ob ein Feld dabei ist, das du im neuen System weiterbenutzen willst (z.B. wenn dein neues System tatsächlich Drip-Content kann). In dem Fall: Feld einfach auf einen passenden grünen Platz rechts ziehen.</div>`;
+    sh += `<div class="src-note"><strong>MemberPress-Plugin-Internas.</strong> Zertifikate, Drip-Content, Auth-Texte, E-Mail-Templates, Trial-Perioden. Im neuen WordPress ohne MemberPress liest die niemand.<br><br>
+    <strong>Was passiert, wenn du sie liegen lässt:</strong> Werden nicht übernommen. Dein Kurs-Inhalt (Texte, Videos, Reihenfolge, Sektionen, Preise) ist davon nicht betroffen.<br><br>
+    <strong>Trotzdem einmal drüberschauen:</strong> Falls dein neues System eines der Features tatsächlich kann (Beispiel: Drip-Content), zieh das passende Feld auf einen grünen Platz rechts.</div>`;
     for (const [pt, b] of Object.entries(buckets)) {
       if (!b.ignorable.length) continue;
-      sh += `<div class="grp"><div class="grp-title">${esc(pt)} — ${b.ignorable.length} Plugin-interne Felder</div>`;
+      sh += `<div class="grp"><div class="grp-title">${esc(pt)} · ${b.ignorable.length} Plugin-interne Felder</div>`;
       for (const mk of b.ignorable) {
         const used = ST.mappings.some(m => m.src.type === 'meta' && m.src.name === mk.name && m.src.postType === pt);
         const preview = mk.samples.length ? `<span class="preview">Beispiele: ${samp(mk.samples, 30).map(esc).join(', ')}</span>` : '';
@@ -1869,10 +1856,10 @@ function renderPreview() {
       const rowStyle = (p._unresolved || p.categories.length === 0) ? ' style="background:rgba(248,113,113,0.05)"' : '';
       const catCell = p.categories.length
         ? p.categories.map(c => esc(c.name)).join(', ')
-        : `<span style="color:var(--red)">— ${p._unresolved ? 'sec_id=' + esc(p._unresolved) : 'keine Sektion'}</span>`;
+        : `<span style="color:var(--red)">${p._unresolved ? 'sec_id=' + esc(p._unresolved) : 'keine Sektion'}</span>`;
       h += `<tr${rowStyle}><td>${esc(p.title)}</td><td style="color:var(--text3)">${esc(p.slug)}</td>
         <td>${catCell}</td>
-        <td>${p.menuOrder}</td><td style="color:var(--text3);font-size:0.72rem">${Object.keys(p.meta).filter(k => p.meta[k]).join(', ') || '—'}</td></tr>`;
+        <td>${p.menuOrder}</td><td style="color:var(--text3);font-size:0.72rem">${Object.keys(p.meta).filter(k => p.meta[k]).join(', ') || ''}</td></tr>`;
     }
     h += '</tbody></table>';
     const tp = document.createElement('div'); tp.className = 'tab-panel'; tp.id = 'tp-pt-' + pt; tp.innerHTML = h;
@@ -1951,6 +1938,9 @@ function goTo(step) {
   ST.step = step;
   refreshStepperState();
   document.querySelectorAll('.panel').forEach((p, i) => p.classList.toggle('show', i === step));
+  // Begrüßungs-Box nur im allerersten Schritt zeigen, danach mehr Platz für die eigentliche Arbeit
+  const wb = document.getElementById('welcome-box');
+  if (wb) wb.style.display = step === 0 ? '' : 'none';
 
   if (step === 0) { renderUpload(); renderProcs(); }
   if (step === 1) { detect(); renderDnD(); renderPairs(); }
