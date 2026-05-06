@@ -694,6 +694,13 @@ const IGNORE_PATTERNS = [
   /^_mpcs_course_menu_order$/,
 ];
 function isIgnorable(fieldName) {
+  // Pauschal: ALLE MemberPress- und MemberPress-Courses-Internas.
+  // Wirklich relevante Felder (Preis, Heading, Footer, Benefits, Section-ID,
+  // Lesson-Order) sind im Auto-Mapping, dort werden sie als "used" markiert.
+  // Alles andere mit _mepr_*/_mpcs_*/_memberpress_* Praefix ist Plugin-Konfiguration,
+  // die im Ziel-System ohne MemberPress-Plugin nicht funktioniert.
+  if (/^_(mepr|mpcs|memberpress)/.test(fieldName)) return true;
+  // Plus spezifische Patterns aus der Liste (Reserve fuer andere Plugins)
   return IGNORE_PATTERNS.some(rx => rx.test(fieldName));
 }
 
